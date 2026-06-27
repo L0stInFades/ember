@@ -1,0 +1,35 @@
+# --- build artifacts ---
+obj_vtop/
+obj_dir/
+*.o
+*.elf
+*.bin
+*.dis
+*.vcd
+
+# generated program/payload images (rebuildable)
+*.hex
+tests/*.bin
+tests/*.elf
+tests/*.hex
+
+# --- synthesis outputs ---
+*.json
+*.log
+*.config
+
+# --- Linux images (rebuildable via linux/, too large for git) ---
+linux/*.bin
+linux/*.hex
+linux/Image*
+linux/vmlinux*
+linux/*.dtb
+
+# --- toolchains / large blobs (not part of source) ---
+oss-cad-suite/
+*.tgz
+*.tar.*
+
+# --- misc ---
+.DS_Store
+/tmp/

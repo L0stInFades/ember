@@ -1,0 +1,90 @@
+/dts-v1/;
+
+/ {
+    #address-cells = <1>;
+    #size-cells = <1>;
+    compatible = "riscv-minimal-soc";
+    model = "rvcore-virt";
+
+    chosen {
+        bootargs = "console=ttyS0 earlycon=uart8250,mmio,0x10000000,115200 rdinit=/sbin/init";
+        stdout-path = "/soc/serial@10000000";
+    };
+
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        timebase-frequency = <100000000>;
+
+        cpu@0 {
+            device_type = "cpu";
+            reg = <0>;
+            status = "okay";
+            compatible = "riscv";
+            riscv,isa = "rv32ima";
+            mmu-type = "riscv,sv32";
+
+            cpu_intc0: interrupt-controller {
+                #interrupt-cells = <1>;
+                interrupt-controller;
+                compatible = "riscv,cpu-intc";
+            };
+        };
+    };
+
+    memory@80000000 {
+        device_type = "memory";
+        reg = <0x80000000 0x08000000>; /* 128 MB */
+    };
+
+    soc {
+        #address-cells = <1>;
+        #size-cells = <1>;
+        compatible = "simple-bus";
+        ranges;
+
+        clint0: clint@2000000 {
+            compatible = "sifive,clint0", "riscv,clint0";
+            reg = <0x02000000 0x10000>;
+            interrupts-extended = <&cpu_intc0 3 &cpu_intc0 7>;
+        };
+
+        plic0: interrupt-controller@c000000 {
+            compatible = "sifive,plic-1.0.0", "riscv,plic0";
+            #interrupt-cells = <1>;
+            #address-cells = <0>;
+            interrupt-controller;
+            reg = <0x0c000000 0x04000000>;
+            interrupts-extended = <&cpu_intc0 11 &cpu_intc0 9>;
+            riscv,ndev = <31>;
+        };
+
+        serial@10000000 {
+            compatible = "ns16550a";
+            reg = <0x10000000 0x100>;
+            clock-frequency = <10000000>;
+            reg-shift = <0>;
+            reg-io-width = <1>;
+            interrupt-parent = <&plic0>;
+            interrupts = <1>;
+            no-loopback-test;
+        };
+
+        poweroff {
+            compatible = "syscon-poweroff";
+            regmap = <&syscon0>;
+            offset = <0x0>;
+            value = <0x5555>;
+        };
+        reboot {
+            compatible = "syscon-reboot";
+            regmap = <&syscon0>;
+            offset = <0x0>;
+            value = <0x7777>;
+        };
+        syscon0: syscon@11100000 {
+            compatible = "syscon";
+            reg = <0x11100000 0x1000>;
+        };
+    };
+};

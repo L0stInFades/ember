@@ -1,0 +1,8 @@
+# Synthesize the direct-mapped cache (1 KB: LINES=64, WORDS=4) to ECP5.
+# Run from repo root:  yosys synth/synth_cache.ys
+# For Fmax via nextpnr, use the IO-reduced wrapper synth/syn_top_cache.v.
+read_verilog rtl/cache/cache.v
+read_verilog synth/syn_top_cache.v
+hierarchy -top syn_top_cache
+synth_ecp5 -top syn_top_cache -json syn_cache.json
+stat

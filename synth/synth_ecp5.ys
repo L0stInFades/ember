@@ -1,0 +1,8 @@
+# Synthesize the 5-stage pipeline core to ECP5 (Fmax reference).
+# Run from repo root:  yosys synth/synth_ecp5.ys
+read_verilog rtl/cores/cpu_pipe.v
+read_verilog synth/syn_top.v
+hierarchy -top syn_top
+synth_ecp5 -top syn_top -json syn_pipe.json
+stat
+ltp -noff
