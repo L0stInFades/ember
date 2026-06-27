@@ -68,17 +68,41 @@ Each phase has a hard **Definition of Done (DoD)**. Do not claim a phase until i
 DoD is green in CI. Phases are roughly sequential but P1 (verification) runs
 *forever* in parallel from the moment it starts.
 
-### P0 - Make it real (synthesizable, on an FPGA, booting from DRAM)
-Turn the *simulation* Linux core into *hardware*.
-- Replace behavioral `imem/dmem` with a real memory interface; infer/instantiate
-  block RAM; add a proper **DRAM controller** path (e.g. LiteDRAM) on a dev board.
-- Make the PTW **sequential** (a small FSM), not combinational. Integrate `cache.v`
-  as a real L1 behind the LSU/fetch.
-- Bring up on a concrete board (Arty A7 / Nexys / KC705 / Genesys2 class) with UART;
-  add a JTAG **RISC-V Debug Module**.
-- **DoD:** RV32IMAC, in-order, **boots the existing Linux image from DRAM on real
-  FPGA hardware** to the shell; ≥100 MHz on the target FPGA; `git`-reproducible
-  bitstream build.
+> **Current strategy: physical hardware is deliberately deferred.** The main line is
+> **simulation + tool synthesis** on macOS (Verilator for behavior, yosys+nextpnr for
+> real area/Fmax). The FPGA board is an *optional* track (see "Optional - Hardware
+> bring-up" after P0) that can be picked up anytime, because the RTL is kept
+> FPGA-ready and timing-closed in the tool. Priority order right now:
+> **P0 (make it synthesizable) + P1 (verification), both 100% on the Mac.**
+
+### P0 - Make it synthesizable (simulation + tool synthesis, no board required)
+Turn the *simulation* Linux core into real, mappable hardware - verified in
+simulation and pushed through yosys+nextpnr for an honest area/Fmax. **No physical
+board needed** (see the optional "Hardware bring-up" track below).
+
+- Replace behavioral `imem/dmem` with a real **multi-cycle memory interface**
+  (req/valid + stall), backed by inferable **block RAM** for synthesis.
+- Make the datapath **stall** on memory; make the PTW a **sequential FSM** that
+  issues real memory reads per level, not a combinational walk.
+- Integrate `rtl/cache/cache.v` as a real **L1** (I$/D$) behind fetch + LSU, over a
+  `rtl/cache/slowmem.v`-style multi-cycle backing memory.
+- Push the whole core through **yosys + nextpnr-ecp5** (already on our Mac) and read
+  off real **area + Fmax**; optionally simulate the post-PnR netlist.
+- **DoD:** the *entire* core+SoC is synthesizable (no behavioral RAM, no combinational
+  PTW); nextpnr **closes timing on an ECP5-85F** with a reported Fmax (realistically
+  ~40-75 MHz); **all directed tests pass and Linux still boots in Verilator** with the
+  new memory hierarchy; `cpu_ooo.v` is either retired or refactored enough to PnR.
+
+#### Optional - Hardware bring-up (deferred; pick up anytime for "silicon proof")
+Not on the critical path. When we want the on-hardware credibility, the RTL is already
+FPGA-ready, so this becomes a thin integration step. On our **Intel Mac, macOS**, use
+the **open flow** (`oss-cad-suite`: yosys + nextpnr + `openFPGALoader`/`fujprog`/
+`ecpprog`/`openocd`, all installed) targeting **Lattice ECP5 / Gowin** boards;
+Xilinx/Intel (Vivado/Quartus) only run in a Linux x86 VM/Docker, so they are a
+fallback. DRAM + SoC glue from **LiteX** (LiteDRAM + ready targets). Recommended board:
+**ULX3S (ECP5-85F, 32 MB SDRAM)**, flashed by the `fujprog` we already have; **ECPIX-5
+/ OrangeCrab 85F** (DDR3) for more memory; **Tang Primer 20K/25K** (Gowin) as a cheap
+alt. **DoD:** boots the image from DRAM on real silicon to the shell.
 
 ### P1 - Verification foundation (the thing that makes it "industrial")
 Stand up the methodology used by CVA6/XiangShan. This never stops.
@@ -151,7 +175,7 @@ explicitly retired here as a reference, not a basis).
 |---|---|---|---|
 | ISA | RV32IMAC + S/U + Sv32 | RV64GC + Sv39 | **RVA23** (V + H + Zb* + ...) |
 | Whole-core synthesizable | partial (pipe/rvcore/cache) | entire core + SoC | silicon-proven |
-| Fmax | ~68 MHz (ECP5, `cpu_pipe`) | 100-200 MHz FPGA / >1 GHz ASIC | ~2 GHz-class ASIC |
+| Fmax | ~68 MHz (ECP5, `cpu_pipe`) | ~40-75 MHz on ECP5-85F (open flow) | >1 GHz / ~2 GHz-class ASIC |
 | DMIPS/MHz | n/a (no HW perf) | >2 | BOOM **3.87** |
 | CoreMark/MHz | n/a | >3 | ~5-6 (high-end) |
 | SPEC2006/GHz | n/a | first real number | XiangShan **>15** |
@@ -185,7 +209,8 @@ explicitly retired here as a reference, not a basis).
 1. Define a clean memory/bus boundary in `rtl/cores/rvlinux.v` and replace behavioral
    RAM with a BRAM/AXI memory model; make the PTW a sequential FSM.
 2. Integrate `rtl/cache/cache.v` as a real L1 behind fetch + LSU (multi-cycle mem).
-3. Pick a target FPGA board; bring up UART + DRAM; boot the existing image from DRAM.
+3. Push the refactored core through **yosys + nextpnr-ecp5** on the Mac for honest
+   **area + Fmax** (no board); keep it timing-closed as features land.
 4. Stand up RISCOF + a Spike difftest harness over RVVI in CI - before adding any new
    ISA features. Correctness infrastructure first, then RV64, then performance.
 
