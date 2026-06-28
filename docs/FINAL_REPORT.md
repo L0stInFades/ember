@@ -65,9 +65,10 @@ ISA and page-table walker. Full transcript: `/tmp/shell_transcript.txt`.
 
 External P1 verification bring-up has a strict tool gate separate from the default
 regression:
-- `tools/setup_riscof_env.sh` creates `.p1/riscof-venv`, installs RISCOF, and
-  clones `riscv-arch-test` into `.p1/riscv-arch-test`. It also installs the
-  ACT4 Python framework/testgen/coverage packages into the same venv.
+- `tools/setup_riscof_env.sh` creates `.p1/riscof-venv`, installs RISCOF, pins
+  `riscv-arch-test` to commit
+  `c6c69dc33414101c7ea94bf4fbea40885f9447ce`, and installs the ACT4 Python
+  framework/testgen/coverage packages into the same venv.
 - `tools/setup_spike_env.sh` clones/builds `riscv-isa-sim` into `.p1/` and
   installs Spike under `.p1/spike` for the external prefix gate.
 - `verify_p1_external.sh` checks the host/RISCOF/difftest/DUT-simulation
@@ -115,13 +116,13 @@ regression:
   uses `p1/act4/ember-rv32i/` DUT macros/linker support, compiles upstream ACT4
   RV32I tests, generates expected signatures with Spike, recompiles in
   `RVTEST_SELFCHECK` mode, and runs the ELFs on the Ember RTL testbench.
-  The default set is `I-add`, `I-addi`, `I-lw`, `I-sw`, `I-beq`, and `I-jalr`.
+  The default set is all 39 pinned upstream RV32I-I tests.
 - The metrics/dashboard layer now retains this external P1 evidence: `p1`
   profile summaries include external test count, compared retired rows, Spike
   commit count, non-terminal trap-exception checks, and terminal-trap coverage,
   plus the ACT/Spike smoke pass count. Evidence-health requires at least one
   retained P1 external run with 17 tests, 23 ordinary trap-exception checks, one
-  terminal trap, and 6 ACT/Spike smoke tests.
+  terminal trap, and 39 ACT/Spike smoke tests.
 - This is a Spike prefix plus ACT/Spike smoke gate, not full RVVI or full ACT4
   certification. Full ACT4/UDB remains future work; the local system Ruby is
   still 2.6 while upstream UDB wants Ruby 3.2+. RISCOF/ACT4 DUT/reference plugins,
@@ -1054,11 +1055,19 @@ rows, 23 non-terminal trap-exception checks, 85,628 Spike commits, and 1
 terminal-trap comparison.
 The local ACT/Spike smoke was then added to the same P1 external profile:
 `logs/ci-p1-20260629-act4-spike` reports the existing 17-test Spike-prefix gate
-plus 6/6 ACT/Spike smoke tests generated from upstream ACT4 RV32I sources. The
+plus the initial 6/6 ACT/Spike smoke tests generated from upstream ACT4 RV32I sources. The
 follow-up `logs/ci-evidence-health-20260629-act4-spike` run passed 47/47 checks
 under the new retained-evidence floor, and
 `python3 tools/check_ci_dashboard.py --min-p1-act4-spike-tests 7` fails as
 intended against the retained 6-test smoke result.
+The smoke default was then widened to the full pinned RV32I-I ACT set:
+`logs/p1-act4-spike-all-rv32i` passes all 39 tests, and evidence-health now
+requires at least 39 ACT/Spike smoke tests by default. The full local P1 profile
+passes in `logs/ci-p1-20260629-act4-spike-39` with the same 17-test
+Spike-prefix gate plus 39/39 ACT/Spike tests; the follow-up
+`logs/ci-evidence-health-20260629-act4-spike-39` run passes 47/47 checks, and
+`python3 tools/check_ci_dashboard.py --min-p1-act4-spike-tests 40` fails as
+intended against the retained value of 39.
 Source commit `394657a` passed hosted macOS CI as run `28335561543`: quick
 `pass=1 fail=0`, retained RVTRACE audit still reports 17 tests, 71,683 retired
 instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and

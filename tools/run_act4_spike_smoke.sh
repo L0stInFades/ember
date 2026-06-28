@@ -9,7 +9,7 @@ cd "$ROOT"
 LOGDIR=${LOGDIR:-logs/p1-act4-spike-$(date +%Y%m%d-%H%M%S)}
 ARCH_TEST=${P1_ARCH_TEST_DIR:-"$ROOT/.p1/riscv-arch-test"}
 CONFIG_DIR=${P1_ACT4_CONFIG_DIR:-"$ROOT/p1/act4/ember-rv32i"}
-TESTS=${P1_ACT4_TESTS:-"I-add-00 I-addi-00 I-lw-00 I-sw-00 I-beq-00 I-jalr-00"}
+TESTS=${P1_ACT4_TESTS:-}
 MAXCYC=${P1_ACT4_MAXCYC:-800000}
 SPIKE_INSNS=${P1_ACT4_SPIKE_INSNS:-2000000}
 
@@ -36,9 +36,18 @@ OBJCOPY=${RISCV_OBJCOPY:-$(find_first_exe riscv64-unknown-elf-objcopy riscv64-el
 SPIKE=${SPIKE:-$(find_first_exe spike)}
 
 [ -d "$ARCH_TEST/tests/env" ] || { echo "missing ACT tests env: $ARCH_TEST/tests/env" >&2; exit 1; }
+[ -d "$ARCH_TEST/tests/rv32i/I" ] || { echo "missing ACT RV32I tests: $ARCH_TEST/tests/rv32i/I" >&2; exit 1; }
 [ -f "$CONFIG_DIR/link.ld" ] || { echo "missing ACT link script: $CONFIG_DIR/link.ld" >&2; exit 1; }
 [ -f "$CONFIG_DIR/rvmodel_macros.h" ] || { echo "missing rvmodel macros: $CONFIG_DIR/rvmodel_macros.h" >&2; exit 1; }
 [ -f "$CONFIG_DIR/rvtest_config.h" ] || { echo "missing rvtest config: $CONFIG_DIR/rvtest_config.h" >&2; exit 1; }
+
+if [ -z "$TESTS" ]; then
+  TESTS=$(find "$ARCH_TEST/tests/rv32i/I" -maxdepth 1 -name 'I-*.S' -print \
+    | sed 's#.*/##; s#\.S$##' \
+    | sort \
+    | tr '\n' ' ')
+fi
+[ -n "$TESTS" ] || { echo "no ACT RV32I tests selected" >&2; exit 1; }
 
 process_signature() {
   PYTHONPATH="$ARCH_TEST/framework/src${PYTHONPATH:+:$PYTHONPATH}" \

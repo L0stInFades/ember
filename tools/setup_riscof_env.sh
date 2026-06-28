@@ -6,6 +6,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 VENV=${P1_RISCOF_VENV:-"$ROOT/.p1/riscof-venv"}
 ARCH_TEST=${P1_ARCH_TEST_DIR:-"$ROOT/.p1/riscv-arch-test"}
+ARCH_TEST_REF=${P1_ARCH_TEST_REF:-c6c69dc33414101c7ea94bf4fbea40885f9447ce}
 
 mkdir -p "$ROOT/.p1"
 
@@ -18,8 +19,10 @@ fi
 
 if [ ! -d "$ARCH_TEST/.git" ]; then
   rm -rf "$ARCH_TEST"
-  git clone --depth 1 https://github.com/riscv-non-isa/riscv-arch-test "$ARCH_TEST"
+  git clone --no-checkout https://github.com/riscv-non-isa/riscv-arch-test "$ARCH_TEST"
 fi
+git -C "$ARCH_TEST" fetch --depth 1 origin "$ARCH_TEST_REF"
+git -C "$ARCH_TEST" checkout --detach FETCH_HEAD
 
 if [ -d "$ARCH_TEST/framework" ]; then
   "$VENV/bin/python" -m pip install --upgrade \

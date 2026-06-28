@@ -367,16 +367,22 @@ The current upstream architectural-test path is now explicit too: RISCOF 1.25.3
 does not discover the newer ACT4 `START_TEST_CONFIG`/`MARCH` test metadata in
 the current `riscv-arch-test` tree, so the repo carries a narrower ACT/Spike
 smoke instead of claiming full RISCOF/ACT4 certification. `tools/setup_riscof_env.sh`
-installs the ACT4 Python framework/testgen/coverage packages into
-`.p1/riscof-venv`; `p1/act4/ember-rv32i/` provides the DUT link script and
-`rvmodel` macros; and `tools/run_act4_spike_smoke.sh` compiles upstream ACT4
-RV32I tests, generates expected signatures with Spike, rebuilds them in
-`RVTEST_SELFCHECK` mode, and runs the resulting ELFs on the Ember RTL
-testbench. `logs/ci-p1-20260629-act4-spike` passes the existing 17-test
-Spike-prefix gate plus 6/6 ACT/Spike smoke tests (`I-add`, `I-addi`, `I-lw`,
-`I-sw`, `I-beq`, `I-jalr`). `logs/ci-evidence-health-20260629-act4-spike`
-passes 47/47 checks under the new default ACT/Spike floor, and a negative
-`--min-p1-act4-spike-tests 7` check fails against the retained value of 6.
+pins `riscv-arch-test` to commit
+`c6c69dc33414101c7ea94bf4fbea40885f9447ce` and installs the ACT4 Python
+framework/testgen/coverage packages into `.p1/riscof-venv`;
+`p1/act4/ember-rv32i/` provides the DUT link script and `rvmodel` macros; and
+`tools/run_act4_spike_smoke.sh` compiles upstream ACT4 RV32I tests, generates
+expected signatures with Spike, rebuilds them in `RVTEST_SELFCHECK` mode, and
+runs the resulting ELFs on the Ember RTL testbench. `logs/ci-p1-20260629-act4-spike`
+passes the existing 17-test Spike-prefix gate plus the initial 6/6 ACT/Spike
+smoke subset (`I-add`, `I-addi`, `I-lw`, `I-sw`, `I-beq`, `I-jalr`). A follow-up
+local run `logs/p1-act4-spike-all-rv32i` passes all 39 pinned upstream RV32I-I
+ACT/Spike tests, and the retained evidence floor is raised from 6 to 39.
+`logs/ci-p1-20260629-act4-spike-39` passes the widened P1 profile with the same
+17-test Spike-prefix gate (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus 39/39 ACT/Spike tests. `logs/ci-evidence-health-20260629-act4-spike-39`
+passes 47/47 checks under the new 39-test ACT/Spike floor, and a negative
+`--min-p1-act4-spike-tests 40` check fails against the retained value of 39.
 Full ACT4/UDB generation and certification remain future work; the local system
 Ruby is still 2.6, while upstream UDB currently wants Ruby 3.2+, so that path is
 not part of this smoke.
