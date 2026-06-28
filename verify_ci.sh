@@ -40,6 +40,9 @@ Environment:
   P0_PNR_NEXTPNR_LOG      Retained nextpnr log for p0-pnr-audit.
   P0_PNR_CONFIG           Retained nextpnr textcfg for p0-pnr-audit.
   P1_TRACE_LOGDIR         Retained verify.sh/quick logdir with rvtrace_*.csv.
+  P1_SPIKE_PREFIX_TESTS   Override the base P1 Spike-prefix test list.
+  P1_SPIKE_SV32_PREFIX_TESTS
+                          Override the Sv32 P1 Spike-prefix test list.
   P1_ACT4_TESTS           Override ACT/Spike smoke test list.
   P1_ACT4_GROUPS          Override ACT/Spike smoke extension groups (default is the 106-test RV32 IMAC/Zicsr/Zicntr/Zifencei/hint/Zmmul set; evidence-health checks the exact default group list).
   P1_ACT4_ZICSR_MARCH     Override the C-aware Zicsr ACT/Spike reference ISA.

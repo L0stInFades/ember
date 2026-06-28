@@ -156,8 +156,8 @@ destination register unchanged, while the misaligned store raises cause 6 with
 `mtval=&g_word+2` and leaves the backing word unchanged.
 `tools/collect_ci_metrics.py` now emits per-run `summary.json` and `summary.md`
 artifacts from `verify_ci.sh` logs, covering CI pass/fail, retained RVTRACE
-coverage, CI evidence health, P0 Linux gate status/login cycles, and PnR
-Fmax/resource metrics;
+coverage, CI evidence health, exact P1 external test names, P0 Linux gate
+status/login cycles, and PnR Fmax/resource metrics;
 `verify_ci.sh` generates those summaries automatically and the GitHub workflows
 publish `summary.md` into the Actions step summary. `tools/render_ci_dashboard.py`
 now builds cross-run `logs/ci-dashboard.json` / `logs/ci-dashboard.md` from those
@@ -168,10 +168,11 @@ the retained traps, AMOs, PTE updates, and privilege switches come from, and it 
 enforces default per-test coverage floors so those signals cannot silently move out
 of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
-artifacts, P0 Linux login evidence with a default 9B-cycle ceiling, 40 MHz PnR
-evidence, RVTRACE aggregate counts, and 48 per-test coverage-floor checks. The
-current dashboard in this worktree scans 77 summaries, retains 77 history
-records, has an 8-run pass streak, and tracks the latest P0 Linux evidence with
+artifacts, P0 Linux login evidence with a default 9B-cycle ceiling, exact P1
+external test composition, 40 MHz PnR evidence, RVTRACE aggregate counts, and 48
+per-test coverage-floor checks. The
+current dashboard in this worktree scans 78 summaries, retains 78 history
+records, has a 9-run pass streak, and tracks the latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, latest retained RVTRACE audit/coverage,
 latest CI evidence health, best PnR Fmax, profile counts, floor-check status,
 latest run per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
@@ -492,6 +493,14 @@ quick `pass=1 fail=0`, and hosted P1 external
 `logs/github-p1-external-28338812276` still records 17 Spike-prefix tests
 (`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus 106/106
 ACT/Spike tests with `group_count=12` and the expected group CSV.
+The retained P1 external evidence path now also records and checks the exact
+Spike-prefix test-name list, not just the 17-test count:
+`isa,amotest,ctest,shtest,mtest,mmu,utrap,misalign,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`.
+`tools/collect_ci_metrics.py` emits this list in `summary.md`, and
+`tools/check_ci_dashboard.py` requires it by default. Local
+`logs/ci-evidence-health-20260629-p1-test-list` passes the refreshed 53-check
+health gate; an intentionally shortened `--require-p1-external-tests` list fails
+against the retained CSV, proving the gate catches silent P1 test-set shrinkage.
 
 ---
 

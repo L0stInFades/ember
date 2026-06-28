@@ -21,6 +21,26 @@ DEFAULT_P1_ACT4_SPIKE_GROUPS = [
     "ZihintntlZca",
 ]
 
+DEFAULT_P1_EXTERNAL_TESTS = [
+    "isa",
+    "amotest",
+    "ctest",
+    "shtest",
+    "mtest",
+    "mmu",
+    "utrap",
+    "misalign",
+    "mprv",
+    "mxr",
+    "upage",
+    "ifault",
+    "wpfault",
+    "sum",
+    "badpte",
+    "superpage",
+    "amo_mmu",
+]
+
 
 def load_json(path):
     try:
@@ -129,6 +149,11 @@ def main():
     ap.add_argument("--max-p0-linux-login-cycles", type=int, default=9_000_000_000)
     ap.add_argument("--min-p1-external-runs", type=int, default=1)
     ap.add_argument("--min-p1-external-tests", type=int, default=17)
+    ap.add_argument(
+        "--require-p1-external-tests",
+        default=",".join(DEFAULT_P1_EXTERNAL_TESTS),
+        help="comma-separated exact P1 external Spike-prefix test list required for the latest P1 evidence; empty disables",
+    )
     ap.add_argument("--min-p1-act4-spike-tests", type=int, default=106)
     ap.add_argument(
         "--require-p1-act4-spike-groups",
@@ -296,6 +321,23 @@ def main():
                 args.min_p1_external_tests,
                 evidence=p1_source,
             )
+            required_p1_tests = [
+                test.strip()
+                for test in args.require_p1_external_tests.split(",")
+                if test.strip()
+            ]
+            if required_p1_tests:
+                actual_p1_tests = [item.get("test") for item in latest_p1.get("tests", []) if item.get("test")]
+                add_check(
+                    checks,
+                    "P1 external test list",
+                    actual_p1_tests == required_p1_tests,
+                    "tests={actual} required={required}".format(
+                        actual=",".join(actual_p1_tests) or "missing",
+                        required=",".join(required_p1_tests),
+                    ),
+                    p1_source,
+                )
             check_min(
                 checks,
                 "P1 external trap exceptions",

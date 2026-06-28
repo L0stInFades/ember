@@ -308,10 +308,14 @@ def main():
     if summary["p1_external"]:
         lines += ["", "## P1 External"]
         for item in summary["p1_external"]:
+            tests_text = ",".join(test.get("test", "") for test in item.get("tests", []) if test.get("test")) or "-"
             lines.append(
-                "- status={status} tests={test_count} ret={ret} traps={traps} "
+                "- status={status} tests={test_count} names={tests_text} ret={ret} traps={traps} "
                 "trap_exceptions={trap_exceptions} spike_commits={spike_commits} "
-                "terminal_traps={terminal_traps} source=`{source}`".format(**item)
+                "terminal_traps={terminal_traps} source=`{source}`".format(
+                    tests_text=tests_text,
+                    **item,
+                )
             )
     if summary["act4_spike"]:
         lines += ["", "## ACT/Spike Smoke"]

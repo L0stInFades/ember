@@ -124,10 +124,12 @@ regression:
   low-bit behavior matches the DUT. `Zihpm` remains excluded because the HPM
   counter CSR bank is not implemented.
 - The metrics/dashboard layer now retains this external P1 evidence: `p1`
-  profile summaries include external test count, compared retired rows, Spike
-  commit count, non-terminal trap-exception checks, and terminal-trap coverage,
-  plus the ACT/Spike smoke pass count and exact selected ACT group list.
-  Evidence-health requires at least one retained P1 external run with 17 tests,
+  profile summaries include external test count, exact Spike-prefix test names,
+  compared retired rows, Spike commit count, non-terminal trap-exception checks,
+  and terminal-trap coverage, plus the ACT/Spike smoke pass count and exact
+  selected ACT group list. Evidence-health requires at least one retained P1
+  external run with the exact 17-test list
+  (`isa,amotest,ctest,shtest,mtest,mmu,utrap,misalign,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`),
   23 ordinary trap-exception checks, one terminal trap, 106 ACT/Spike smoke
   tests, and the exact default group list (`I,M,Zmmul,Zaamo,Zalrsc,Zca,Zicsr,Zicntr,Zifencei,Zihintpause,Zihintntl,ZihintntlZca`).
 - The P0 Linux evidence path now retains the synth-shell boot-to-login cycle
@@ -1175,6 +1177,13 @@ quick `pass=1 fail=0`, and `logs/github-p1-external-28338812276` records 17
 Spike-prefix tests (`ret=70670`, `trap_exceptions=23`,
 `terminal_traps=1`) plus 106/106 ACT/Spike tests with `group_count=12` and the
 expected group CSV.
+The P1 external metrics path now records exact Spike-prefix test composition, not
+just the count: summaries emit
+`isa,amotest,ctest,shtest,mtest,mmu,utrap,misalign,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`,
+and evidence-health requires that default list. The refreshed local gate passes
+in `logs/ci-evidence-health-20260629-p1-test-list` with 53/53 checks, while an
+intentionally shortened `--require-p1-external-tests` list fails against the
+retained CSV.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
