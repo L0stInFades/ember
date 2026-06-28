@@ -24,12 +24,18 @@ jobs:
       - name: Install simulation toolchain
         run: |
           brew update
-          brew install icarus-verilog verilator llvm
+          brew install icarus-verilog verilator llvm lld
           if [ -d /usr/local/opt/llvm/bin ]; then
             echo "/usr/local/opt/llvm/bin" >> "$GITHUB_PATH"
           fi
           if [ -d /opt/homebrew/opt/llvm/bin ]; then
             echo "/opt/homebrew/opt/llvm/bin" >> "$GITHUB_PATH"
+          fi
+          if [ -d /usr/local/opt/lld/bin ]; then
+            echo "/usr/local/opt/lld/bin" >> "$GITHUB_PATH"
+          fi
+          if [ -d /opt/homebrew/opt/lld/bin ]; then
+            echo "/opt/homebrew/opt/lld/bin" >> "$GITHUB_PATH"
           fi
 
       - name: Run quick profile

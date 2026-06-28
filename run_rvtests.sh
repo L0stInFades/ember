@@ -24,7 +24,14 @@ if [ -z "${OBJCOPY:-}" ]; then
   OBJCOPY=$(find_first_exe /usr/local/opt/llvm/bin/llvm-objcopy /opt/homebrew/opt/llvm/bin/llvm-objcopy || find_path_tool llvm-objcopy)
 fi
 if [ -z "${LD:-}" ]; then
-  LD=$(find_first_exe /usr/local/bin/ld.lld /opt/homebrew/bin/ld.lld /usr/local/opt/llvm/bin/ld.lld /opt/homebrew/opt/llvm/bin/ld.lld || find_path_tool ld.lld)
+  LD=$(find_first_exe \
+    /usr/local/opt/lld/bin/ld.lld \
+    /opt/homebrew/opt/lld/bin/ld.lld \
+    /usr/local/bin/ld.lld \
+    /opt/homebrew/bin/ld.lld \
+    /usr/local/opt/llvm/bin/ld.lld \
+    /opt/homebrew/opt/llvm/bin/ld.lld \
+    || find_path_tool ld.lld)
 fi
 if [ -z "${CLANG:-}" ] || [ -z "${OBJCOPY:-}" ] || [ -z "${LD:-}" ]; then
   echo "[run_rvtests] missing clang, llvm-objcopy, or ld.lld" >&2
@@ -61,7 +68,7 @@ run_one() {
   if ! "$CLANG" --target=riscv32 -march=rv32im -mabi=ilp32 -nostdlib -ffreestanding -fno-pic \
         -Irvtests -c rvtests/$set/$name.S -o /tmp/rt.o 2>/tmp/rt.err; then
     printf "  %-10s ASM-ERR\n" "$name"; err=$((err+1)); faillist="$faillist $set/$name(asm)"; return; fi
-  if ! "$LD" -T link.ld /tmp/rt.o -o /tmp/rt.elf 2>/tmp/rt.lderr; then
+  if ! "$LD" -m elf32lriscv -T link.ld /tmp/rt.o -o /tmp/rt.elf 2>/tmp/rt.lderr; then
     printf "  %-10s LD-ERR\n" "$name"; err=$((err+1)); faillist="$faillist $set/$name(ld)"; return; fi
   "$OBJCOPY" -O binary /tmp/rt.elf /tmp/rt.bin
   python3 bin2hex.py /tmp/rt.bin rvtest.hex

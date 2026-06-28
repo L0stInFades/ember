@@ -3,29 +3,50 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 NAME=$1
+
+find_first_exe() {
+  local candidate
+  for candidate in "$@"; do
+    if [ -x "$candidate" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+find_path_tool() {
+  command -v "$1" 2>/dev/null || true
+}
+
+export PATH=/usr/local/bin:/opt/homebrew/bin:$PATH
 if [ -z "${CLANG:-}" ]; then
-  if [ -x /usr/local/opt/llvm/bin/clang ]; then
-    CLANG=/usr/local/opt/llvm/bin/clang
-  elif [ -x /opt/homebrew/opt/llvm/bin/clang ]; then
-    CLANG=/opt/homebrew/opt/llvm/bin/clang
-  else
-    CLANG=$(command -v clang)
-  fi
+  CLANG=$(find_first_exe /usr/local/opt/llvm/bin/clang /opt/homebrew/opt/llvm/bin/clang || find_path_tool clang)
 fi
 if [ -z "${OBJCOPY:-}" ]; then
-  if [ -x /usr/local/opt/llvm/bin/llvm-objcopy ]; then
-    OBJCOPY=/usr/local/opt/llvm/bin/llvm-objcopy
-  elif [ -x /opt/homebrew/opt/llvm/bin/llvm-objcopy ]; then
-    OBJCOPY=/opt/homebrew/opt/llvm/bin/llvm-objcopy
-  else
-    OBJCOPY=$(command -v llvm-objcopy)
-  fi
+  OBJCOPY=$(find_first_exe /usr/local/opt/llvm/bin/llvm-objcopy /opt/homebrew/opt/llvm/bin/llvm-objcopy || find_path_tool llvm-objcopy)
 fi
-export PATH=/usr/local/bin:/opt/homebrew/bin:$PATH
-$CLANG --target=riscv32 -march=rv32ima -mabi=ilp32 -nostdlib -ffreestanding -static -O2 \
-   -fno-builtin -fuse-ld=lld -T tests/bm.ld \
-   -o tests/$NAME.elf tests/start.S tests/$NAME.c
-$OBJCOPY -O binary tests/$NAME.elf tests/$NAME.bin
+if [ -z "${LD:-}" ]; then
+  LD=$(find_first_exe \
+    /usr/local/opt/lld/bin/ld.lld \
+    /opt/homebrew/opt/lld/bin/ld.lld \
+    /usr/local/bin/ld.lld \
+    /opt/homebrew/bin/ld.lld \
+    /usr/local/opt/llvm/bin/ld.lld \
+    /opt/homebrew/opt/llvm/bin/ld.lld \
+    || find_path_tool ld.lld)
+fi
+if [ -z "${CLANG:-}" ] || [ -z "${OBJCOPY:-}" ] || [ -z "${LD:-}" ]; then
+  echo "[build_run] missing clang, llvm-objcopy, or ld.lld" >&2
+  exit 1
+fi
+
+"$CLANG" --target=riscv32 -march=rv32ima -mabi=ilp32 -nostdlib -ffreestanding -O2 \
+   -fno-builtin -fno-pic -c tests/start.S -o /tmp/${NAME}_start.o
+"$CLANG" --target=riscv32 -march=rv32ima -mabi=ilp32 -nostdlib -ffreestanding -O2 \
+   -fno-builtin -fno-pic -c tests/$NAME.c -o /tmp/${NAME}.o
+"$LD" -m elf32lriscv -T tests/bm.ld /tmp/${NAME}_start.o /tmp/${NAME}.o -o tests/$NAME.elf
+"$OBJCOPY" -O binary tests/$NAME.elf tests/$NAME.bin
 python3 bin2hex.py tests/$NAME.bin tests/$NAME.hex
 if [ -f oss-cad-suite/environment ]; then
   source oss-cad-suite/environment
