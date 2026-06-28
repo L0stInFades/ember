@@ -27,6 +27,10 @@ ACT4_SPIKE_RE = re.compile(
     r"P1_ACT4_SPIKE: (?P<status>PASS|FAIL) tests=(?P<tests>\d+) "
     r"passed=(?P<passed>\d+) failed=(?P<failed>\d+) logdir=(?P<logdir>.+)"
 )
+P0_LINUX_BOOT_RE = re.compile(
+    r'P0_LINUX_BOOT: PASS mode=(?P<mode>\S+) cycles=(?P<cycles>\d+) '
+    r'maxcyc=(?P<maxcyc>\d+) log_prefix=(?P<log_prefix>\S+)(?: expect="(?P<expect>.*)")?'
+)
 FMAX_RE = re.compile(r"Max frequency .*: ([0-9.]+) MHz \(PASS at ([0-9.]+) MHz\)")
 PNR_UTIL_RE = re.compile(r"(DP16KD|TRELLIS_FF|TRELLIS_COMB):\s+(\d+)/\s*(\d+)\s+(\d+)%")
 
@@ -49,6 +53,7 @@ def parse_log(path):
         "rvtrace_audits": [],
         "p0_linux_pass": False,
         "p0_linux_mode": None,
+        "p0_linux_boots": [],
         "pnr": [],
     }
 
@@ -139,6 +144,17 @@ def parse_log(path):
             spike_entries = []
             current_spike_test = None
 
+    for match in P0_LINUX_BOOT_RE.finditer(text):
+        metrics["p0_linux_boots"].append(
+            {
+                "mode": match.group("mode"),
+                "cycles": int(match.group("cycles")),
+                "maxcyc": int(match.group("maxcyc")),
+                "log_prefix": match.group("log_prefix"),
+                "expect": match.group("expect") or "",
+            }
+        )
+
     if "P0_LINUX_GATE: PASS" in text:
         metrics["p0_linux_pass"] = True
         mode = re.search(r"P0_LINUX_GATE: mode=(\S+)", text)
@@ -224,7 +240,12 @@ def main():
                 entry = dict(entry)
                 entry["source"] = rel(path, logdir)
                 summary[key].append(entry)
-        if item["p0_linux_pass"]:
+        if item["p0_linux_boots"]:
+            for entry in item["p0_linux_boots"]:
+                entry = dict(entry)
+                entry["source"] = rel(path, logdir)
+                summary["p0_linux_passes"].append(entry)
+        elif item["p0_linux_pass"]:
             summary["p0_linux_passes"].append({"source": rel(path, logdir), "mode": item["p0_linux_mode"]})
 
     summary["rvtrace_coverage"] = load_rvtrace_coverage(logdir)
@@ -352,7 +373,10 @@ def main():
         lines += ["", "## P0 Linux"]
         for item in summary["p0_linux_passes"]:
             mode = item["mode"] or "unknown"
-            lines.append(f"- mode={mode} source=`{item['source']}`")
+            cycles = item.get("cycles")
+            maxcyc = item.get("maxcyc")
+            cycle_text = f" cycles={cycles} maxcyc={maxcyc}" if cycles is not None else ""
+            lines.append(f"- mode={mode}{cycle_text} source=`{item['source']}`")
     if summary["pnr"]:
         lines += ["", "## PnR"]
         for item in summary["pnr"]:

@@ -12,7 +12,7 @@ Profiles:
   quick       Run the normal directed/P1 baseline: ./verify.sh
   pr          Run quick plus the P0 Linux OpenSBI smoke gate.
   p0-smoke    Run only the fast P0 Linux OpenSBI smoke gate.
-  p0-audit    Audit retained full P0 Linux login logs without simulation.
+  p0-audit    Audit retained full P0 Linux login logs and boot cycles without simulation.
   p0-pnr-audit
               Audit retained RVLINUX_SYNTH_SHELL top yosys+nextpnr evidence.
   p0-evidence Audit retained P0 Linux login logs plus retained P0 PnR evidence.
@@ -22,7 +22,7 @@ Profiles:
   p1-trace-audit
               Audit retained RVTRACE CSVs through check_rvtrace + rvtrace_ref.
   evidence-health
-              Check retained CI dashboard/history evidence health without rerunning long jobs.
+              Check retained CI dashboard/history evidence health, including P0 login cycles.
   nightly     Run quick, P1, P0 smoke, P0 PnR, then full P0 Linux.
   all         Alias for nightly.
 

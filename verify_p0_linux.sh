@@ -107,7 +107,10 @@ err_log="${LOG_PREFIX}.err"
 
 [ -s "$out_log" ] || { echo "P0_LINUX_GATE: FAIL missing $out_log" >&2; exit 1; }
 [ -s "$err_log" ] || { echo "P0_LINUX_GATE: FAIL missing $err_log" >&2; exit 1; }
-grep -qF "[VSIM] expect matched \"$EXPECT_UART\"" "$err_log"
+expect_line=$(grep -F "[VSIM] expect matched \"$EXPECT_UART\"" "$err_log" | tail -1)
+[ -n "$expect_line" ] || { echo "P0_LINUX_GATE: FAIL missing expected UART marker" >&2; exit 1; }
+boot_cycles=$(printf '%s\n' "$expect_line" | sed -n 's/.* after \([0-9][0-9]*\) cycles .*/\1/p')
+[ -n "$boot_cycles" ] || { echo "P0_LINUX_GATE: FAIL could not parse boot cycles" >&2; exit 1; }
 if [ "$SMOKE" = "0" ]; then
   grep -qF "Starting network: OK" "$out_log"
   grep -qF "Welcome to Buildroot" "$out_log"
@@ -118,4 +121,6 @@ if [ "$SMOKE" = "0" ]; then
   fi
 fi
 
+boot_mode=$([ "$SMOKE" != "0" ] && echo smoke || echo login)
+echo "P0_LINUX_BOOT: PASS mode=$boot_mode cycles=$boot_cycles maxcyc=$MAXCYC log_prefix=$LOG_PREFIX expect=\"$EXPECT_UART\""
 echo "P0_LINUX_GATE: PASS logdir=$LOGDIR"

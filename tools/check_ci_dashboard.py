@@ -105,6 +105,17 @@ def check_min(checks, name, value, minimum, unit="", evidence=None):
     )
 
 
+def check_max(checks, name, value, maximum, unit="", evidence=None):
+    suffix = f" {unit}" if unit else ""
+    add_check(
+        checks,
+        name,
+        value <= maximum,
+        f"{value}{suffix} <= {maximum}{suffix}",
+        evidence=evidence,
+    )
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dashboard", default="logs/ci-dashboard.json", help="dashboard JSON to check")
@@ -115,6 +126,7 @@ def main():
     ap.add_argument("--min-history-runs", type=int, default=1)
     ap.add_argument("--min-pass-streak", type=int, default=1)
     ap.add_argument("--min-p0-linux-runs", type=int, default=1)
+    ap.add_argument("--max-p0-linux-login-cycles", type=int, default=9_000_000_000)
     ap.add_argument("--min-p1-external-runs", type=int, default=1)
     ap.add_argument("--min-p1-external-tests", type=int, default=17)
     ap.add_argument("--min-p1-act4-spike-tests", type=int, default=106)
@@ -195,6 +207,14 @@ def main():
             args.min_p0_linux_runs,
             evidence=str(history_path),
         )
+        if "p0_linux_login_runs" in history:
+            check_min(
+                checks,
+                "P0 Linux login evidence runs",
+                int(history.get("p0_linux_login_runs", 0)),
+                args.min_p0_linux_runs,
+                evidence=str(history_path),
+            )
         p0_logdir = dashboard.get("latest_p0_linux")
         add_check(checks, "latest P0 Linux evidence exists", bool(p0_logdir), f"logdir={p0_logdir or 'none'}")
         p0_summary, p0_source = load_summary(dashboard, p0_logdir)
@@ -213,6 +233,39 @@ def main():
                 f"status={p0_summary.get('status', 'unknown')}",
                 p0_source,
             )
+            latest_p0_login = next(
+                (
+                    item
+                    for item in reversed(p0_summary.get("p0_linux_passes", []))
+                    if item.get("mode") == "login"
+                ),
+                None,
+            )
+            add_check(
+                checks,
+                "latest P0 Linux login evidence",
+                bool(latest_p0_login),
+                f"mode={latest_p0_login.get('mode') if latest_p0_login else 'missing'}",
+                p0_source,
+            )
+            if latest_p0_login:
+                cycles = latest_p0_login.get("cycles")
+                add_check(
+                    checks,
+                    "P0 Linux login cycles recorded",
+                    isinstance(cycles, int),
+                    f"cycles={cycles if cycles is not None else 'missing'}",
+                    p0_source,
+                )
+                if isinstance(cycles, int):
+                    check_max(
+                        checks,
+                        "P0 Linux login cycles",
+                        cycles,
+                        args.max_p0_linux_login_cycles,
+                        "cycles",
+                        evidence=p0_source,
+                    )
 
     if not args.no_require_p1_external:
         check_min(

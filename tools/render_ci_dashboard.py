@@ -62,6 +62,14 @@ def latest_with(summaries, key):
     return None
 
 
+def latest_with_p0_mode(summaries, mode):
+    for summary in summaries:
+        for item in summary.get("p0_linux_passes", []):
+            if item.get("mode") == mode:
+                return summary
+    return None
+
+
 def best_fmax(summaries):
     best = None
     for summary in summaries:
@@ -112,6 +120,7 @@ def history_record(summary):
         "verify_fail": total_field(verify_summaries, "fail"),
         "p0_linux": bool(p0_passes),
         "p0_linux_modes": [item.get("mode") or "unknown" for item in p0_passes],
+        "p0_linux_boots": [p0_linux_record(item) for item in p0_passes],
         "p1_external": p1_external_record(p1_external),
         "act4_spike": act4_spike_record(act4_spike),
         "pnr": None,
@@ -139,6 +148,17 @@ def history_record(summary):
             "trace_logdir": rvtrace.get("trace_logdir"),
         }
     return record
+
+
+def p0_linux_record(item):
+    return {
+        "mode": item.get("mode") or "unknown",
+        "cycles": item.get("cycles"),
+        "maxcyc": item.get("maxcyc"),
+        "log_prefix": item.get("log_prefix"),
+        "expect": item.get("expect"),
+        "source": item.get("source"),
+    }
 
 
 def p1_external_record(item):
@@ -272,6 +292,17 @@ def trend_summary(records):
     pnr_values = [record["pnr"].get("fmax_mhz", 0) for record in pnr_records]
     latest_failure = next((record for record in newest if record.get("status") != "pass"), None)
     latest_pnr = next((record for record in newest if record.get("pnr")), None)
+    p0_linux_login_records = [
+        record
+        for record in records
+        if "login" in record.get("p0_linux_modes", [])
+    ]
+    p0_login_boots = [
+        {"record": record, "boot": boot}
+        for record in records
+        for boot in record.get("p0_linux_boots", [])
+        if boot.get("mode") == "login" and boot.get("cycles") is not None
+    ]
     best_pnr_record = max(
         pnr_records,
         key=lambda record: (record["pnr"].get("fmax_mhz", 0), record.get("timestamp", "")),
@@ -289,6 +320,19 @@ def trend_summary(records):
             "min_fmax_mhz": min(pnr_values),
         }
 
+    p0_linux_login_cycles = None
+    if p0_login_boots:
+        latest = p0_login_boots[-1]
+        cycles = [item["boot"]["cycles"] for item in p0_login_boots]
+        best = min(p0_login_boots, key=lambda item: item["boot"]["cycles"])
+        p0_linux_login_cycles = {
+            "latest_logdir": latest["record"].get("logdir"),
+            "latest_cycles": latest["boot"].get("cycles"),
+            "best_logdir": best["record"].get("logdir"),
+            "best_cycles": best["boot"].get("cycles"),
+            "max_cycles": max(cycles),
+        }
+
     return {
         "runs": len(records),
         "profile_counts": dict(sorted(profile_counts.items())),
@@ -301,6 +345,8 @@ def trend_summary(records):
         if latest_failure
         else None,
         "p0_linux_runs": sum(1 for record in records if record.get("p0_linux")),
+        "p0_linux_login_runs": len(p0_linux_login_records),
+        "p0_linux_login_cycles": p0_linux_login_cycles,
         "p1_external_runs": sum(1 for record in records if record.get("p1_external")),
         "act4_spike_runs": sum(1 for record in records if record.get("act4_spike")),
         "rvtrace_runs": sum(1 for record in records if record.get("rvtrace")),
@@ -321,6 +367,7 @@ def trend_lines(trend, history_path):
         f"- current pass streak: `{trend['current_pass_streak']}`",
         f"- profile counts: `{profile_text}`",
         f"- P0 Linux evidence runs: `{trend['p0_linux_runs']}`",
+        f"- P0 Linux login evidence runs: `{trend.get('p0_linux_login_runs', 0)}`",
         f"- P1 external evidence runs: `{trend.get('p1_external_runs', 0)}`",
         f"- ACT/Spike smoke runs: `{trend.get('act4_spike_runs', 0)}`",
         f"- RVTRACE audit runs: `{trend['rvtrace_runs']}`",
@@ -335,6 +382,14 @@ def trend_lines(trend, history_path):
         )
     else:
         lines.append("- PnR Fmax range: `none`")
+    if trend.get("p0_linux_login_cycles"):
+        p0 = trend["p0_linux_login_cycles"]
+        lines.append(
+            f"- P0 Linux login cycles: latest `{p0['latest_cycles']}` from `{p0['latest_logdir']}`, "
+            f"best `{p0['best_cycles']}` from `{p0['best_logdir']}`, max `{p0['max_cycles']}`"
+        )
+    else:
+        lines.append("- P0 Linux login cycles: `none`")
     if trend["latest_failure"]:
         failure = trend["latest_failure"]
         lines.append(
@@ -355,7 +410,12 @@ def rel(path, root):
 def row(summary):
     profile = ",".join(profiles(summary)) or "-"
     status = summary.get("status", "unknown")
-    p0 = "yes" if summary.get("p0_linux_passes") else "-"
+    p0 = "-"
+    if summary.get("p0_linux_passes"):
+        latest_p0 = summary["p0_linux_passes"][-1]
+        mode = latest_p0.get("mode") or "unknown"
+        cycles = latest_p0.get("cycles")
+        p0 = f"{mode} {cycles / 1_000_000_000:.3f}Gcyc" if cycles is not None else mode
     p1_external = "-"
     if summary.get("p1_external"):
         latest_p1 = summary["p1_external"][-1]
@@ -443,7 +503,7 @@ def main():
     summaries.sort(key=lambda item: item["_mtime"], reverse=True)
 
     latest_profiles = latest_profile_map(summaries)
-    latest_p0 = latest_with(summaries, "p0_linux_passes")
+    latest_p0 = latest_with_p0_mode(summaries, "login") or latest_with(summaries, "p0_linux_passes")
     latest_p1_external = latest_with(summaries, "p1_external")
     latest_act4_spike = latest_with(summaries, "act4_spike")
     latest_trace = latest_with(summaries, "rvtrace_audits")

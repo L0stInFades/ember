@@ -156,7 +156,8 @@ destination register unchanged, while the misaligned store raises cause 6 with
 `mtval=&g_word+2` and leaves the backing word unchanged.
 `tools/collect_ci_metrics.py` now emits per-run `summary.json` and `summary.md`
 artifacts from `verify_ci.sh` logs, covering CI pass/fail, retained RVTRACE
-coverage, CI evidence health, P0 Linux gate status, and PnR Fmax/resource metrics;
+coverage, CI evidence health, P0 Linux gate status/login cycles, and PnR
+Fmax/resource metrics;
 `verify_ci.sh` generates those summaries automatically and the GitHub workflows
 publish `summary.md` into the Actions step summary. `tools/render_ci_dashboard.py`
 now builds cross-run `logs/ci-dashboard.json` / `logs/ci-dashboard.md` from those
@@ -167,12 +168,14 @@ the retained traps, AMOs, PTE updates, and privilege switches come from, and it 
 enforces default per-test coverage floors so those signals cannot silently move out
 of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
-artifacts, P0 Linux login evidence, 40 MHz PnR evidence, RVTRACE aggregate counts,
-and 48 per-test coverage-floor checks. The current dashboard in this worktree
-scans 31 summaries, retains 31 history records, has a 2-run pass streak, and tracks the latest P0 Linux
-evidence, latest retained RVTRACE audit/coverage, latest CI evidence health, best
-PnR Fmax, profile counts, floor-check status, latest run per profile, and recent
-runs. `verify_ci.sh` refreshes this dashboard and trend history after every profile,
+artifacts, P0 Linux login evidence with a default 9B-cycle ceiling, 40 MHz PnR
+evidence, RVTRACE aggregate counts, and 48 per-test coverage-floor checks. The
+current dashboard in this worktree scans 77 summaries, retains 77 history
+records, has an 8-run pass streak, and tracks the latest P0 Linux evidence with
+its 8,716,611,501-cycle login point, latest retained RVTRACE audit/coverage,
+latest CI evidence health, best PnR Fmax, profile counts, floor-check status,
+latest run per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
+and trend history after every profile,
 and the GitHub workflows publish the per-run summary plus cross-run dashboard/trend
 artifacts.
 The CI/cron wiring now exists too:
@@ -476,6 +479,14 @@ ACT/Spike tests with `group_count=12` and the expected group CSV.
 negative `Misalign`/`MisalignZca` ACT result: those groups require
 `MISALIGNED_LDST: true` successful non-aligned load/store behavior, while Ember
 currently implements precise misaligned-access traps.
+The retained P0 Linux evidence path now also records the boot-to-login cycle
+point as structured data: `verify_p0_linux.sh` emits `P0_LINUX_BOOT`, the
+metrics/dashboard/trend pipeline retains `cycles=8716611501` for
+`logs/ci-p0-evidence-20260629-boot-cycles`, and
+`logs/ci-evidence-health-20260629-p0-boot-cycles` passes 52/52 checks with the
+new default `--max-p0-linux-login-cycles 9000000000` guard. A negative check at
+8,000,000,000 cycles fails as expected against the retained 8,716,611,501-cycle
+login evidence.
 
 ---
 

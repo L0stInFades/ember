@@ -130,6 +130,10 @@ regression:
   Evidence-health requires at least one retained P1 external run with 17 tests,
   23 ordinary trap-exception checks, one terminal trap, 106 ACT/Spike smoke
   tests, and the exact default group list (`I,M,Zmmul,Zaamo,Zalrsc,Zca,Zicsr,Zicntr,Zifencei,Zihintpause,Zihintntl,ZihintntlZca`).
+- The P0 Linux evidence path now retains the synth-shell boot-to-login cycle
+  point. `verify_p0_linux.sh` emits `P0_LINUX_BOOT`, summaries/dashboard/trend
+  carry `cycles=8716611501`, and evidence-health requires the latest retained
+  login evidence to stay under the default 9B-cycle ceiling.
 - This is a Spike prefix plus ACT/Spike smoke gate, not full RVVI or full ACT4
   certification. Full ACT4/UDB remains future work; the local system Ruby is
   still 2.6 while upstream UDB wants Ruby 3.2+. RISCOF/ACT4 DUT/reference plugins,
@@ -953,7 +957,7 @@ with 48/48 floor checks passing.
 `tools/collect_ci_metrics.py` now turns any `verify_ci.sh` log directory into
 machine-readable `summary.json` and human-readable `summary.md`, collecting CI
 pass/fail, `verify.sh` pass/fail, P1 external Spike-prefix evidence, retained
-RVTRACE coverage, CI evidence health, P0 Linux gate status, and PnR
+RVTRACE coverage, CI evidence health, P0 Linux gate status/login cycles, and PnR
 Fmax/resource metrics. `verify_ci.sh` writes those
 artifacts automatically at the end of every profile. `tools/render_ci_dashboard.py` then scans
 `logs/**/summary.json` and refreshes `logs/ci-dashboard.json` plus
@@ -962,12 +966,14 @@ evidence, latest RVTRACE audit, best PnR Fmax, latest run per profile, and
 recent-run table are visible without manually
 reading long logs. The same renderer now maintains a de-duplicated retained trend
 history in `logs/ci-history.jsonl` and a human-readable `logs/ci-trend.md`, tracking
-pass streak, profile counts, P0 Linux evidence count, P1 external evidence count,
-RVTRACE audit/coverage counts, latest CI evidence health, latest per-test RVTRACE
-coverage/floor-check status, and PnR Fmax range across runs.
+pass streak, profile counts, P0 Linux evidence/login count and login-cycle range,
+P1 external evidence count, RVTRACE audit/coverage counts, latest CI evidence
+health, latest per-test RVTRACE coverage/floor-check status, and PnR Fmax range
+across runs.
 `tools/check_ci_dashboard.py` turns those retained
 artifacts into a cheap evidence-health gate: by default it requires parse-clean
-dashboard/history files, a passing streak, retained P0 Linux login evidence,
+dashboard/history files, a passing streak, retained P0 Linux login evidence under
+9,000,000,000 cycles,
 retained P1 external Spike-prefix evidence for 17 tests with at least one terminal
 trap, retained PnR evidence at or above the 40 MHz target, retained RVTRACE
 coverage for 17 tests with at least 71,000 retired instructions, 27 traps, 6
@@ -1158,6 +1164,12 @@ expected group CSV.
 `Misalign` and `MisalignZca` groups remain excluded: they are tagged
 `MISALIGNED_LDST: true` and validate successful non-aligned load/store behavior,
 while Ember's current architectural choice is precise misaligned-access traps.
+The P0 retained evidence path now records boot-to-login cycles too:
+`logs/ci-p0-evidence-20260629-boot-cycles` passes with
+`cycles=8716611501`, and `logs/ci-evidence-health-20260629-p0-boot-cycles`
+passes 52/52 checks including the default 9B-cycle ceiling. A negative
+`--max-p0-linux-login-cycles 8000000000` check fails as intended against the
+retained 8,716,611,501-cycle login point.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
