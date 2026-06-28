@@ -100,8 +100,8 @@ path scriptable local-CI/nightly profiles (`quick`, `pr`, `p0-smoke`, `p0-audit`
 combined retained Linux+PnR evidence audit, retained RVTRACE/ref-model audit,
 retained dashboard/history health audit, and reused P0 smoke profile all pass. The
 P1 trace audit rechecks retained `rvtrace_*.csv` with both
-structural and reference-model checkers and currently covers 12 tests, 45,586
-retired instructions, 14 traps, 5 AMOs, 7 PTE updates, and 17 privilege switches.
+structural and reference-model checkers and currently covers 13 tests, 51,394
+retired instructions, 17 traps, 5 AMOs, 9 PTE updates, and 19 privilege switches.
 The added `mprv` directed trace covers MPRV+SUM data permissions: a user-page load
 through `MPRV=1, MPP=S` succeeds with `SUM=1`, then faults with `SUM=0` and records
 `mcause=13`, `mtval=0x40000000`, and the pre-trap MPRV bit.
@@ -124,6 +124,10 @@ side effects: an S-mode load from a read-only supervisor page succeeds and sets
 only A, an S-mode store to that same page delegates a store page fault without
 setting D, then S-mode updates the PTE to add W and confirms the retried store
 sets D.
+The added `sum` directed trace covers S-mode SUM permissions directly: supervisor
+store and load attempts to a user page fault with `SUM=0` and leave A/D clear,
+then the same page loads and stores successfully with `SUM=1`, setting A and D in
+order.
 `tools/collect_ci_metrics.py` now emits per-run `summary.json` and `summary.md`
 artifacts from `verify_ci.sh` logs, covering CI pass/fail, retained RVTRACE
 coverage, CI evidence health, P0 Linux gate status, and PnR Fmax/resource metrics;
@@ -138,8 +142,8 @@ enforces default per-test coverage floors so those signals cannot silently move 
 of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
 artifacts, P0 Linux login evidence, 40 MHz PnR evidence, RVTRACE aggregate counts,
-and 31 per-test coverage-floor checks. The current dashboard in this worktree
-scans 12 summaries, retains 12 history records, has a 2-run pass streak, and tracks the latest P0 Linux
+and 35 per-test coverage-floor checks. The current dashboard in this worktree
+scans 15 summaries, retains 15 history records, has a 2-run pass streak, and tracks the latest P0 Linux
 evidence, latest retained RVTRACE audit/coverage, latest CI evidence health, best
 PnR Fmax, profile counts, floor-check status, latest run per profile, and recent
 runs. `verify_ci.sh` refreshes this dashboard and trend history after every profile,
@@ -164,7 +168,16 @@ The retained RVTRACE audit/coverage over those traces passes in
 `logs/ci-p1-trace-audit-20260629-wpfault` with 12 tests, 45,586 retired
 instructions, 14 traps, 5 AMOs, 7 PTE updates, 17 privilege switches, and 31/31
 floor checks; the local retained evidence-health gate passes in
-`logs/ci-evidence-health-20260629-wpfault` with 36/36 checks. The hosted macOS
+`logs/ci-evidence-health-20260629-wpfault` with 36/36 checks.
+For the current `sum` increment, local directed tests, rvtests, RVTRACE structural
+checks, RVTRACE reference-model checks, and cache/stage smokes pass in
+`logs/ci-quick-20260629-sum/quick`, while full local `quick` still stops at
+`vtop_synth` because this machine has no `verilator` or `oss-cad-suite`. The
+retained RVTRACE audit/coverage over those traces passes in
+`logs/ci-p1-trace-audit-20260629-sum` with 13 tests, 51,394 retired instructions,
+17 traps, 5 AMOs, 9 PTE updates, 19 privilege switches, and 35/35 floor checks;
+the local retained evidence-health gate passes in
+`logs/ci-evidence-health-20260629-sum` with 36/36 checks. The hosted macOS
 GitHub quick CI now runs both quick and
 retained RVTRACE coverage audit: run `28330265212` on commit `6a3a0ba` completed
 `quick regression` successfully, with `logs/github-quick-28330265212` reporting
@@ -182,7 +195,7 @@ the synth-shell memfile fixture is checked in; `build_vtop.sh` falls back to
 directory is absent. Negative
 checks for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`, `mxr:retired=6000`,
 `upage:retired=10000`, `ifault:retired=10000`, `wpfault:pte_updates=3`, and
-`--min-rvtrace-tests 13` fail as expected. The remaining P0/P1 work is observing the first real self-hosted
+`sum:pte_updates=3`, plus `--min-rvtrace-tests 14` fail as expected. The remaining P0/P1 work is observing the first real self-hosted
 scheduled/nightly green run, broader coverage beyond directed trace/ref-model tests,
 populating the retained trend history from real remote CI/cron runs, and default
 integration. The behavioral single-cycle path is no longer the only login path, but
