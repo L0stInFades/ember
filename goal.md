@@ -396,6 +396,22 @@ The pushed source commit `ad11d07` passed hosted macOS CI as run `28336035414`:
 quick `pass=1 fail=0`, retained RVTRACE audit remains green, and the hosted P1
 external artifact records the same 17-test Spike-prefix gate plus 39/39
 ACT/Spike RV32I-I smoke tests.
+The local ACT/Spike smoke default has now been widened across the implemented
+RV32 IMAC-facing architectural groups that pass against Spike: `I`, `M`,
+`Zaamo`, `Zalrsc`, `Zca`, and `Zifencei`. `tools/run_act4_spike_smoke.sh`
+now discovers tests by group, reads each source file's `MARCH` metadata for GCC
+and Spike, and defaults to a 1.5M-cycle DUT cap. A standalone run in
+`logs/p1-act4-spike-imac-zifencei-default` passes 85/85 tests. The full local
+P1 profile in `logs/ci-p1-20260629-act4-spike-85` also passes with the same
+17-test Spike-prefix gate (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus 85/85 ACT/Spike smoke tests. Evidence-health is raised
+to the 85-test ACT/Spike floor and passes 47/47 checks in
+`logs/ci-evidence-health-20260629-act4-spike-85`; a negative
+`--min-p1-act4-spike-tests 86` check fails against the retained value of 85.
+The upstream `Zicsr` ACT group is deliberately kept out of the default smoke for
+now because its no-`C` MARCH metadata exposed a `mepc`/`sepc` WARL low-bit
+expectation mismatch with Ember's compressed-instruction decode path; that is a
+separate correctness item rather than a coverage count to hide.
 
 ---
 

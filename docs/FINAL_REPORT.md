@@ -116,13 +116,16 @@ regression:
   uses `p1/act4/ember-rv32i/` DUT macros/linker support, compiles upstream ACT4
   RV32I tests, generates expected signatures with Spike, recompiles in
   `RVTEST_SELFCHECK` mode, and runs the ELFs on the Ember RTL testbench.
-  The default set is all 39 pinned upstream RV32I-I tests.
+  The default set is 85 pinned upstream RV32 `I`, `M`, `Zaamo`, `Zalrsc`,
+  `Zca`, and `Zifencei` tests. The upstream `Zicsr` group is held out while the
+  core's compressed-instruction support and `mepc`/`sepc` WARL low-bit behavior
+  are reconciled.
 - The metrics/dashboard layer now retains this external P1 evidence: `p1`
   profile summaries include external test count, compared retired rows, Spike
   commit count, non-terminal trap-exception checks, and terminal-trap coverage,
   plus the ACT/Spike smoke pass count. Evidence-health requires at least one
   retained P1 external run with 17 tests, 23 ordinary trap-exception checks, one
-  terminal trap, and 39 ACT/Spike smoke tests.
+  terminal trap, and 85 ACT/Spike smoke tests.
 - This is a Spike prefix plus ACT/Spike smoke gate, not full RVVI or full ACT4
   certification. Full ACT4/UDB remains future work; the local system Ruby is
   still 2.6 while upstream UDB wants Ruby 3.2+. RISCOF/ACT4 DUT/reference plugins,
@@ -1077,6 +1080,21 @@ Source commit `ad11d07` then passed hosted macOS CI as run `28336035414`:
 quick `pass=1 fail=0`, retained RVTRACE audit remains green, and
 `logs/github-p1-external-28336035414` records the same 17-test Spike-prefix
 gate plus 39/39 ACT/Spike RV32I-I smoke tests.
+The local ACT/Spike smoke default has now been widened across the implemented
+RV32 IMAC-facing architectural groups that pass against Spike: `I`, `M`,
+`Zaamo`, `Zalrsc`, `Zca`, and `Zifencei`. `tools/run_act4_spike_smoke.sh`
+now discovers tests by group and reads each source file's `MARCH` metadata for
+GCC and Spike. `logs/p1-act4-spike-imac-zifencei-default` passes 85/85 tests,
+and the full local P1 profile in `logs/ci-p1-20260629-act4-spike-85` passes
+with the same 17-test Spike-prefix gate (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus 85/85 ACT/Spike smoke tests.
+`logs/ci-evidence-health-20260629-act4-spike-85` passes 47/47 checks under the
+new 85-test floor, while
+`python3 tools/check_ci_dashboard.py --min-p1-act4-spike-tests 86` fails as
+intended against the retained value of 85. The upstream `Zicsr` group is held
+out of the default smoke because its no-`C` MARCH metadata exposed a
+`mepc`/`sepc` WARL low-bit expectation mismatch with Ember's
+compressed-instruction decode path; that remains a separate correctness item.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
