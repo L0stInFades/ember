@@ -281,6 +281,10 @@ with both on `PATH`. The full external gate passes in
 against the DUT TRAP row. This is evidence hardening, not performance work: it
 adds an independent ISS check for the new trap behavior while full RVVI/complete
 post-trap lockstep remains future P1 work.
+The pushed source commit `eb8d405` also passed hosted macOS quick CI as run
+`28333237998`: quick `pass=1 fail=0`, `verify.sh` `pass=6 fail=0`, and retained
+RVTRACE audit totals of 17 tests, 71,682 retired instructions, 27 traps, 6 AMOs,
+12 PTE updates, 25 privilege switches, and 48/48 floor checks.
 
 ---
 

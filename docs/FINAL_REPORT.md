@@ -908,6 +908,12 @@ Spike 1.1.1-dev from `riscv-isa-sim` commit
 run covers the existing five no-trap Spike prefixes, `mmu`, `utrap`, and
 `misalign` terminal-trap comparison (`rows=98`, `ret=97`, `trap=1`) against the
 first misaligned-load exception.
+The pushed source commit `eb8d405` then passed hosted macOS quick CI as run
+`28333237998`: `logs/github-quick-28333237998` reports quick `pass=1 fail=0`
+with `verify.sh` `pass=6 fail=0`, and
+`logs/github-p1-trace-audit-28333237998` reports the same 17-test /
+71,682-retired / 27-trap / 6-AMO / 12-PTE-update / 25-privilege-switch baseline
+with 48/48 floor checks passing.
 `tools/collect_ci_metrics.py` now turns any `verify_ci.sh` log directory into
 machine-readable `summary.json` and human-readable `summary.md`, collecting CI
 pass/fail, `verify.sh` pass/fail, retained RVTRACE coverage, CI evidence health,
