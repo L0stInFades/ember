@@ -882,13 +882,14 @@ instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and 48/48
 coverage-floor checks. The retained evidence-health profile passed in
 `logs/ci-evidence-health-20260629-misalign` with 36/36 checks.
 Hosted macOS GitHub Actions now runs both quick and the retained RVTRACE coverage
-audit. Run `28332215063` for commit `914d8c2` passed `quick regression`; artifact
-summary `logs/github-quick-28332215063` reports quick `pass=1 fail=0`, including
-the stale TLB remap `MEM_BOUNDARY_RESULT: PASS` and min-core
-`MIN_CORE_TLB_FLUSH_RESULT: PASS` checks in `quick/cache.log`, and
-`logs/github-p1-trace-audit-28332215063` reports the 16-test /
-71,237-retired / 25-trap / 6-AMO / 12-PTE-update / 25-privilege-switch baseline
-with all 46 coverage-floor checks passing.
+audit. Run `28332600873` for commit `5e39a55` passed `quick regression`; artifact
+summary `logs/github-quick-28332600873` reports quick `pass=1 fail=0`, including
+hosted `misalign` directed/trace/reftrace rows, the stale TLB remap
+`MEM_BOUNDARY_RESULT: PASS`, and min-core `MIN_CORE_TLB_FLUSH_RESULT: PASS`
+checks in `quick/cache.log`. Its hosted `vtop_synth` also builds and halts cleanly
+under Verilator 5.048. `logs/github-p1-trace-audit-28332600873` reports the
+17-test / 71,682-retired / 27-trap / 6-AMO / 12-PTE-update /
+25-privilege-switch baseline with all 48 coverage-floor checks passing.
 `tools/collect_ci_metrics.py` now turns any `verify_ci.sh` log directory into
 machine-readable `summary.json` and human-readable `summary.md`, collecting CI
 pass/fail, `verify.sh` pass/fail, retained RVTRACE coverage, CI evidence health,

@@ -242,13 +242,15 @@ instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and 48/48
 floor checks; the local retained evidence-health gate passes in
 `logs/ci-evidence-health-20260629-misalign` with 36/36 checks. The hosted macOS
 GitHub quick CI now runs both quick and
-retained RVTRACE coverage audit: run `28332215063` on commit `914d8c2` completed
-`quick regression` successfully, with `logs/github-quick-28332215063` reporting
-quick `pass=1 fail=0`, including the stale TLB remap `MEM_BOUNDARY_RESULT: PASS`
-and min-core `MIN_CORE_TLB_FLUSH_RESULT: PASS` checks in `quick/cache.log`, and
-`logs/github-p1-trace-audit-28332215063` reporting
-RVTRACE coverage for 16 tests, 71,237 retired instructions, 25 traps, 6 AMOs,
-12 PTE updates, 25 privilege switches, and 46/46 floor checks passing. The
+retained RVTRACE coverage audit: run `28332600873` on commit `5e39a55` completed
+`quick regression` successfully, with `logs/github-quick-28332600873` reporting
+quick `pass=1 fail=0`, including hosted `misalign` directed/trace/reftrace rows,
+the stale TLB remap `MEM_BOUNDARY_RESULT: PASS`, and min-core
+`MIN_CORE_TLB_FLUSH_RESULT: PASS` checks in `quick/cache.log`; its hosted
+`vtop_synth` also builds and halts cleanly under Verilator 5.048. The
+`logs/github-p1-trace-audit-28332600873` artifact reports RVTRACE coverage for
+17 tests, 71,682 retired instructions, 27 traps, 6 AMOs, 12 PTE updates,
+25 privilege switches, and 48/48 floor checks passing. The
 migration fixed
 reproducibility issues that had been hidden by local generated artifacts:
 `run_rvtests.sh` now locates LLVM tools, rebuilds `soc_rt` with `SIM_INIT`, and
