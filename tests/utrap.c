@@ -27,9 +27,7 @@ __asm__(
 void m_report(void){
   CHECK("reached_user", g_in_user, 1);
   CHECK("ecall_from_U", g_ecall_from, 8);
-  report();
-  *(volatile u32*)0x11100000 = 0x5555;
-  for(;;);
+  poweroff(report());
 }
 
 int main(void){

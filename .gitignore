@@ -1,5 +1,7 @@
 # --- build artifacts ---
 obj_vtop/
+obj_vtop*/
+soc_rt
 obj_dir/
 *.o
 *.elf
@@ -9,6 +11,7 @@ obj_dir/
 
 # generated program/payload images (rebuildable)
 *.hex
+!tb_rvlinux_synth_shell_memfile.hex
 tests/*.bin
 tests/*.elf
 tests/*.hex
@@ -27,9 +30,15 @@ linux/*.dtb
 
 # --- toolchains / large blobs (not part of source) ---
 oss-cad-suite/
+.p1/
+logs/
+linux-build/
+rvtrace.log
 *.tgz
 *.tar.*
 
 # --- misc ---
 .DS_Store
 /tmp/
+__pycache__/
+*.pyc

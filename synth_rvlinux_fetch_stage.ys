@@ -1,0 +1,5 @@
+# Synthesize the rvlinux multi-cycle fetch stage controller to ECP5.
+read_verilog rvlinux_fetch_stage.v
+hierarchy -top rvlinux_fetch_stage
+synth_ecp5 -top rvlinux_fetch_stage -json syn_rvlinux_fetch_stage.json
+stat

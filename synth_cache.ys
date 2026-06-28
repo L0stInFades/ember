@@ -1,0 +1,5 @@
+# Synthesize the direct-mapped cache (1 KB: LINES=64, WORDS=4) to ECP5.
+read_verilog cache.v
+hierarchy -top cache -chparam LINES 64 -chparam WORDS 4
+synth_ecp5 -top cache -json syn_cache.json
+stat

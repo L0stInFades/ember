@@ -1,0 +1,14 @@
+# Synthesize the split I$/D$ L1 memory subsystem to ECP5.
+read_verilog cache.v
+read_verilog cache_client_arbiter2.v
+read_verilog mem_arbiter2.v
+read_verilog slowmem.v
+read_verilog l1_mem_system.v
+hierarchy -top l1_mem_system \
+    -chparam I_LINES 64 \
+    -chparam D_LINES 64 \
+    -chparam WORDS 4 \
+    -chparam MEMW 16384 \
+    -chparam LAT 8
+synth_ecp5 -top l1_mem_system -json syn_l1_mem_system.json
+stat

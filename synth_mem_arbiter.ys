@@ -1,0 +1,5 @@
+# Synthesize the two-client cache backing-memory arbiter to ECP5.
+read_verilog mem_arbiter2.v
+hierarchy -top mem_arbiter2
+synth_ecp5 -top mem_arbiter2 -json syn_mem_arbiter2.json
+stat

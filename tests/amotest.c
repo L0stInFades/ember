@@ -5,8 +5,12 @@ int main(void){
   s=100; v=0x0f;
   __asm__ volatile("amoor.w %0,%0,(%1)":"+r"(v):"r"(&s):"memory"); // rd==rs2
   puts("rd==rs2 OR: s="); puthex(s); puts(" old="); puthex(v); putc('\n');
+  CHECK("amoor_rd_eq_rs2_mem", s, 100|0x0f);
+  CHECK("amoor_rd_eq_rs2_old", v, 100);
   s=100; v=0x0f;
   __asm__ volatile("amoor.w %0,%2,(%1)":"=r"(v):"r"(&s),"r"(0x0f):"memory");
   puts("rd!=rs2 OR: s="); puthex(s); putc('\n');
-  return 0;
+  CHECK("amoor_rd_ne_rs2_mem", s, 100|0x0f);
+  CHECK("amoor_rd_ne_rs2_old", v, 100);
+  return report();
 }

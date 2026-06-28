@@ -13,5 +13,5 @@ int main(void){
   CHECK("bits_mask", ok, 1);
   CHECK("shr_var", (0x80000000u>>31), 1);
   CHECK("sar_var", ((int)0x80000000)>>31, -1);
-  report(); return 0;
+  return report();
 }

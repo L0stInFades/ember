@@ -1,0 +1,7 @@
+# yosys: 综合到 ECP5 网表 (供 nextpnr-ecp5 布局布线 / 测 Fmax)
+read_verilog cpu_pipe.v
+read_verilog syn_top.v
+hierarchy -top syn_top
+synth_ecp5 -top syn_top -json syn_top_ecp5.json
+stat
+ltp -noff

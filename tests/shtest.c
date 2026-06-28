@@ -10,6 +10,5 @@ int main(void){
   // 24-bit signed bitfield like printf_spec field_width=-1
   volatile unsigned sp = 0xffffff00u | 0x12;   // field_width=0xffffff, type=0x12
   CHECK("fw_signext", ((int)sp)>>8, -1);
-  report();
-  return 0;
+  return report();
 }

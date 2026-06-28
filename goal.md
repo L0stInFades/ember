@@ -60,6 +60,111 @@ The gap to "industrial" is large and we will not pretend otherwise:
 | Silicon | none | FPGA on a real board, then **ASIC tape-out** |
 | Debug | none | RISC-V Debug spec + JTAG, triggers, trace |
 
+Current P0 snapshot (2026-06-28): the synthesizable Linux path is no longer only a
+plan. The `RVLINUX_SYNTH_SHELL` top now routes through real multicycle fetch/LSU,
+sequential Sv32 PTW, split I$/D$ L1, MMIO, PLIC/CLINT, and real backing BRAM, and
+passes yosys on the core shell. In Verilator with the full soft-float
+OpenSBI/Linux payload, the synth-shell path reaches Linux early boot and, with the
+platform timebase corrected to 400 MHz, reaches NFS/9p/block-layer init through
+`io scheduler kyber registered` within a 5B-cycle bounded run. Follow-up
+fast-retire, fetch-overlap, direct CSR-completion fetch, and a retained split
+one-entry ITLB/DTLB improve same-path timestamps (`kyber` 6.282s -> 3.121s)
+without warnings, Oops, or panic. The split-TLB run also progresses beyond the old
+`kyber` stop point into serial/ttyS0, loop, e1000e, usb-storage, PF_INET6,
+PF_PACKET, 9pnet, and DNS resolver registration within 5B cycles. A stock-rootfs
+10B-cycle split-TLB long run reaches userspace `/sbin/init` and Buildroot init
+scripts (`syslogd`, `klogd`, `sysctl` all OK), then waits in `Starting network:
+Waiting for interface eth0 to appear...`; the final PC is `arch_cpu_idle`,
+consistent with a network/device-wait path rather than a kernel panic or PTW
+correctness failure. Because the minimal synth-shell SoC has no Ethernet device, a
+no-net rootfs variant now keeps only loopback networking and adds a static
+`/dev/null`. With that minimal-SoC payload and the 400 MHz timebase, the
+synth-shell Verilator run reaches `buildroot login:` after **8,716,611,501**
+cycles. A tested divide-result-cache experiment was rejected because it regressed
+the same full Linux run (`kyber` 5.586s -> 5.593s) and added area. A standard
+manual runner, `run_synth_shell_nonet.sh`, now rebuilds or reuses the no-net
+400 MHz payload, builds/reuses the synth-shell Verilator model, logs stdout/stderr,
+and has itself matched the default `buildroot login:` expectation in the same
+8,716,611,501-cycle run. An explicit `verify_p0_linux.sh` gate now wraps that path:
+default mode runs the expensive boot-to-login check, `--smoke` does a quick OpenSBI
+same-payload smoke, and `--check-logs=<prefix>` audits retained full-run logs. The
+current `RVLINUX_SYNTH_SHELL` small-IO top wrapper also has fresh tool evidence:
+`yosys synth_rvlinux_synth_shell_top.ys` reports 32 DP16KD, 10902 LUT4, 5118 FF,
+108 TRELLIS_DPR16X4, and 0 check problems, and
+`nextpnr-ecp5 --85k --package CABGA381 --speed 6 --seed 2 --freq 40` passes on
+LFE5U-85F/CABGA381 with final routed Fmax 53.94 MHz. This moves the
+synthesis/PnR-honesty item forward. A new `verify_ci.sh` scheduler now gives the
+path scriptable local-CI/nightly profiles (`quick`, `pr`, `p0-smoke`, `p0-audit`,
+`p0-pnr-audit`, `p0-evidence`, `p0-full`, `p0-pnr`, `p1`, `p1-trace-audit`,
+`evidence-health`, `nightly`); its retained-login-log audit, retained-PnR audit,
+combined retained Linux+PnR evidence audit, retained RVTRACE/ref-model audit,
+retained dashboard/history health audit, and reused P0 smoke profile all pass. The
+P1 trace audit rechecks retained `rvtrace_*.csv` with both
+structural and reference-model checkers and currently covers 11 tests, 39,918
+retired instructions, 12 traps, 5 AMOs, 5 PTE updates, and 15 privilege switches.
+The added `mprv` directed trace covers MPRV+SUM data permissions: a user-page load
+through `MPRV=1, MPP=S` succeeds with `SUM=1`, then faults with `SUM=0` and records
+`mcause=13`, `mtval=0x40000000`, and the pre-trap MPRV bit.
+The added `mxr` directed trace covers Sv32 MXR permissions: an S-mode load from a
+supervisor execute-only page faults with `MXR=0`, then succeeds with `MXR=1` and
+confirms only the PTE A bit was set.
+The added `upage` directed trace covers U-mode Sv32 fetch/data permissions and
+delegation: S-mode `sret`s into a user executable page, U-mode load from a
+supervisor-only page delegates a load-page-fault to S-mode with `scause=13` and
+`stval=0x80301000`, U-mode then stores/loads through a user data page, and a U-mode
+`ecall` delegates to S before M-mode reporting.
+The added `ifault` directed trace covers delegated Sv32 instruction page faults:
+S-mode jumps to a supervisor-readable but non-executable page, the S trap handler
+records `scause=12` and `stval=sepc`, returns to the `jalr` continuation, and
+confirms the non-executable target PTE did not receive A/D updates. The local
+`tools/rvtrace_ref.py` model now handles cause-12 fetch page-fault rows instead of
+rejecting them as outside the reference model.
+`tools/collect_ci_metrics.py` now emits per-run `summary.json` and `summary.md`
+artifacts from `verify_ci.sh` logs, covering CI pass/fail, retained RVTRACE
+coverage, CI evidence health, P0 Linux gate status, and PnR Fmax/resource metrics;
+`verify_ci.sh` generates those summaries automatically and the GitHub workflows
+publish `summary.md` into the Actions step summary. `tools/render_ci_dashboard.py`
+now builds cross-run `logs/ci-dashboard.json` / `logs/ci-dashboard.md` from those
+summary artifacts and maintains a de-duplicated retained trend history in
+`logs/ci-history.jsonl` plus `logs/ci-trend.md`. The RVTRACE audit now also writes
+per-test `rvtrace_coverage.json` / `rvtrace_coverage.md` artifacts that expose where
+the retained traps, AMOs, PTE updates, and privilege switches come from, and it now
+enforces default per-test coverage floors so those signals cannot silently move out
+of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
+dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
+artifacts, P0 Linux login evidence, 40 MHz PnR evidence, RVTRACE aggregate counts,
+and 27 per-test coverage-floor checks. The current dashboard scans 22 summaries,
+retains 22 history records, has a 22-run pass streak, and tracks the latest P0 Linux
+evidence, latest retained RVTRACE audit/coverage, latest CI evidence health, best
+PnR Fmax, profile counts, floor-check status, latest run per profile, and recent
+runs. `verify_ci.sh` refreshes this dashboard and trend history after every profile,
+and the GitHub workflows publish the per-run summary plus cross-run dashboard/trend
+artifacts.
+The CI/cron wiring now exists too:
+`.github/workflows/ci.yml` runs the hosted macOS quick profile on push/PR,
+`.github/workflows/nightly.yml` targets a self-hosted macOS nightly at 01:00
+Asia/Shanghai, and `tools/ci_cron.sh` provides a locked local cron/launchd wrapper;
+`tools/ci_cron.sh p0-audit`, `tools/ci_cron.sh p0-evidence`,
+`tools/ci_cron.sh p1-trace-audit`, `./verify_ci.sh evidence-health`, and a fresh
+`./verify_ci.sh quick` all pass locally. After moving the work into the actual
+GitHub worktree at `/Users/Apple/ember`, the source-only quick profile also passes
+there with `logs/ci-quick-20260629-005240`; the retained RVTRACE audit/coverage
+passes in `logs/ci-p1-trace-audit-20260629-005437`; and the local retained
+evidence-health gate passes in `logs/ci-evidence-health-20260629-005600` with
+36/36 checks passing. The migration fixed reproducibility issues that had been
+hidden by local generated artifacts: `run_rvtests.sh` now locates LLVM tools,
+rebuilds `soc_rt` with `SIM_INIT`, and uses checked-in `rvtests/` plus `link.ld`;
+the synth-shell memfile fixture is checked in; `build_vtop.sh` falls back to
+`sim/sim_main.cpp`; and optional `oss-cad-suite` loading no longer fails when the
+directory is absent. Negative
+checks for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`, `mxr:retired=6000`,
+`upage:retired=10000`, `ifault:retired=10000`, and `--min-rvtrace-tests 12` fail as expected. The remaining P0/P1 work is observing the first real hosted/self-hosted
+scheduled green runs, broader coverage beyond directed trace/ref-model tests,
+populating the retained trend history from real remote CI/cron runs, and default
+integration. The behavioral single-cycle path is no longer the only login path, but
+it remains the historical simulation model; this is still far from the RVA23-class,
+silicon-proven north star.
+
 ---
 
 ## 3. The roadmap (phased, measurable, continuous)

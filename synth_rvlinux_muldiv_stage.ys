@@ -1,0 +1,5 @@
+# Synthesize the sequential RV32M multiply/divide stage to ECP5.
+read_verilog rvlinux_muldiv_stage.v
+hierarchy -top rvlinux_muldiv_stage
+synth_ecp5 -top rvlinux_muldiv_stage -json syn_rvlinux_muldiv_stage.json
+stat

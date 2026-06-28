@@ -1,0 +1,5 @@
+# Synthesize the rvlinux multi-cycle LR/SC/AMO stage controller to ECP5.
+read_verilog rvlinux_amo_stage.v
+hierarchy -top rvlinux_amo_stage
+synth_ecp5 -top rvlinux_amo_stage -json syn_rvlinux_amo_stage.json
+stat

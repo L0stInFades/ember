@@ -6,6 +6,5 @@ int main(void){
   CHECK("fib10", fib(10), 55);
   volatile int a=12345, b=678;
   CHECK("mul", a*b, 12345*678);
-  report();
-  return 0;
+  return report();
 }

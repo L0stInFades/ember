@@ -7,6 +7,7 @@
 #define PU 16
 #define PA_ 64
 #define PD 128
+#define MENVCFGH_ADUE (1u<<29)
 #define csrw(r,v) __asm__ volatile("csrw " r ",%0"::"r"(v):"memory")
 #define csrr(r)   ({u32 _v; __asm__ volatile("csrr %0," r:"=r"(_v)); _v;})
 
@@ -44,9 +45,7 @@ void m_report(void){
   CHECK("xlate_lhu0",  g_h0, 0x2211);
   CHECK("xlate_lhu1",  g_h1, 0x4433);
   CHECK("xlate_sb",    g_sb, 0x44337F11);    // byte store through MMU (byte1 -> 0x7F)
-  report();
-  *(volatile u32*)0x11100000 = 0x5555;        // poweroff
-  for(;;);
+  poweroff(report());
 }
 
 int main(void){
@@ -60,6 +59,7 @@ int main(void){
   csrw("stvec",(u32)s_trap);
   csrw("medeleg",(1u<<12)|(1u<<13)|(1u<<15));       // delegate page faults to S
   csrw("mideleg",0);
+  csrw("0x31a",MENVCFGH_ADUE);                      // menvcfgh.ADUE: hardware A/D update for Spike/Svadu
   csrw("satp",(1u<<31)|0x80200u);                   // Sv32, root PPN
   __asm__ volatile("sfence.vma"::: "memory");
 

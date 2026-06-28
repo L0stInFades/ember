@@ -1,0 +1,5 @@
+# Synthesize the rvlinux RVC/decode packet stage to ECP5.
+read_verilog rvlinux_decode_stage.v
+hierarchy -top rvlinux_decode_stage
+synth_ecp5 -top rvlinux_decode_stage -json syn_rvlinux_decode_stage.json
+stat

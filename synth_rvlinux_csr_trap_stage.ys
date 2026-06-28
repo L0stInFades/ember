@@ -1,0 +1,5 @@
+# Synthesize the rvlinux privileged CSR/trap stage to ECP5.
+read_verilog rvlinux_csr_trap_stage.v
+hierarchy -top rvlinux_csr_trap_stage
+synth_ecp5 -top rvlinux_csr_trap_stage -json syn_rvlinux_csr_trap_stage.json
+stat

@@ -10,8 +10,12 @@ _start:
     addi t0, t0, 4
     j    1b
 2:  call main
-    # exit(main) -> syscon poweroff (a0 ignored, always 0x5555 = ok=0)
+    # exit(main) -> syscon poweroff (0 => pass, nonzero => fail)
     li   t0, 0x11100000
-    li   t1, 0x5555
+    beqz a0, 2f
+    li   t1, 0x7777
+    j    3f
+2:  li   t1, 0x5555
+3:
     sw   t1, 0(t0)
-3:  j 3b
+4:  j 4b

@@ -1,0 +1,27 @@
+# Synthesize the minimal rvlinux multicycle execution shell to ECP5.
+read_verilog cache.v
+read_verilog cache_client_arbiter2.v
+read_verilog mem_arbiter2.v
+read_verilog slowmem.v
+read_verilog l1_mem_system.v
+read_verilog sv32_ptw.v
+read_verilog rvlinux_mem_boundary.v
+read_verilog rvlinux_fetch_stage.v
+read_verilog rvlinux_lsu_stage.v
+read_verilog rvlinux_amo_stage.v
+read_verilog rvlinux_stage_cluster.v
+read_verilog rvlinux_decode_stage.v
+read_verilog rvlinux_csr_trap_stage.v
+read_verilog rvlinux_muldiv_stage.v
+read_verilog rvlinux_mmio_stage.v
+read_verilog rvlinux_min_core_fsm.v
+hierarchy -top rvlinux_min_core_fsm \
+    -chparam RESET_PC 0 \
+    -chparam I_LINES 16 \
+    -chparam D_LINES 16 \
+    -chparam WORDS 4 \
+    -chparam MEMWORDS 16384 \
+    -chparam LAT 5 \
+    -chparam RAMBASE 0
+synth_ecp5 -top rvlinux_min_core_fsm -json syn_rvlinux_min_core_fsm.json
+stat

@@ -1,0 +1,12 @@
+# Synthesize the rvlinux memory boundary through a small-IO wrapper for nextpnr.
+read_verilog cache.v
+read_verilog cache_client_arbiter2.v
+read_verilog mem_arbiter2.v
+read_verilog slowmem.v
+read_verilog l1_mem_system.v
+read_verilog sv32_ptw.v
+read_verilog rvlinux_mem_boundary.v
+read_verilog syn_top_rvlinux_mem_boundary.v
+hierarchy -top syn_top_rvlinux_mem_boundary
+synth_ecp5 -top syn_top_rvlinux_mem_boundary -json syn_top_rvlinux_mem_boundary.json
+stat

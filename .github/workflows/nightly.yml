@@ -1,0 +1,76 @@
+name: nightly
+
+on:
+  schedule:
+    # 01:00 Asia/Shanghai.
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: verify_ci.sh profile to run on the self-hosted runner
+        required: true
+        default: nightly
+        type: choice
+        options:
+          - nightly
+          - p0-full
+          - p0-pnr
+          - p0-evidence
+          - p0-pnr-audit
+          - p0-smoke
+          - p0-audit
+          - p1
+          - p1-trace-audit
+          - evidence-health
+          - pr
+          - quick
+
+permissions:
+  contents: read
+
+jobs:
+  nightly:
+    name: self-hosted regression
+    runs-on:
+      - self-hosted
+      - macOS
+    timeout-minutes: 720
+
+    env:
+      PROFILE: ${{ github.event.inputs.profile || 'nightly' }}
+      P0_PREPARE_PAYLOAD: ${{ vars.P0_PREPARE_PAYLOAD || '0' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: Run scheduled profile
+        env:
+          LOGDIR: logs/github-${{ env.PROFILE }}-${{ github.run_id }}
+        run: ./verify_ci.sh "$PROFILE"
+
+      - name: Publish regression summary
+        if: always()
+        run: |
+          summary="logs/github-${PROFILE}-${GITHUB_RUN_ID}/summary.md"
+          if [ -f "$summary" ]; then
+            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f logs/ci-dashboard.md ]; then
+            printf '\n' >> "$GITHUB_STEP_SUMMARY"
+            cat logs/ci-dashboard.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-logs-${{ github.run_id }}
+          path: |
+            logs/
+            logs/ci-dashboard.json
+            logs/ci-dashboard.md
+            logs/ci-history.jsonl
+            logs/ci-trend.md

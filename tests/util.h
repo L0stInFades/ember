@@ -10,5 +10,6 @@ static int _fails=0;
 #define CHECK(name, got, exp) do{ u32 g=(u32)(got), e=(u32)(exp); \
   if(g!=e){_fails++; puts("FAIL "); puts(name); puts(" got="); puthex(g); puts(" exp="); puthex(e); putc('\n'); } \
   else { puts("ok   "); puts(name); putc('\n'); } }while(0)
-static void report(void){ if(_fails){ puts("RESULT: FAIL "); putdec(_fails); putc('\n'); }
-  else puts("RESULT: PASS\n"); }
+static int report(void){ if(_fails){ puts("RESULT: FAIL "); putdec(_fails); putc('\n'); }
+  else puts("RESULT: PASS\n"); return _fails; }
+static void poweroff(int code){ *(volatile u32*)0x11100000u = code ? 0x7777u : 0x5555u; for(;;); }

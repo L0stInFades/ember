@@ -1,0 +1,486 @@
+#!/usr/bin/env python3
+"""Render a cross-run dashboard from verify_ci summary.json artifacts."""
+
+import argparse
+import json
+from collections import Counter
+from datetime import datetime, timezone
+from pathlib import Path
+
+
+def iso_utc(timestamp):
+    return datetime.fromtimestamp(timestamp, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def load_summary(path):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, f"{path}: {exc}"
+    if not isinstance(data, dict) or "logdir" not in data:
+        return None, f"{path}: not a CI summary"
+    data = dict(data)
+    data["_summary_path"] = str(path)
+    data["_mtime"] = path.stat().st_mtime
+    return data, None
+
+
+def load_history(path):
+    records = []
+    errors = []
+    if not path or not path.is_file():
+        return records, errors
+    for lineno, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            item = json.loads(line)
+        except json.JSONDecodeError as exc:
+            errors.append(f"{path}:{lineno}: {exc}")
+            continue
+        if isinstance(item, dict) and item.get("logdir"):
+            records.append(item)
+        else:
+            errors.append(f"{path}:{lineno}: missing logdir")
+    return records, errors
+
+
+def profiles(summary):
+    names = []
+    for item in summary.get("ci_summaries", []):
+        name = item.get("profile")
+        if name and name not in names:
+            names.append(name)
+    return names
+
+
+def latest_with(summaries, key):
+    for item in summaries:
+        if item.get(key):
+            return item
+    return None
+
+
+def best_fmax(summaries):
+    best = None
+    for summary in summaries:
+        for pnr in summary.get("pnr", []):
+            if best is None or pnr.get("fmax_mhz", 0) > best["pnr"].get("fmax_mhz", 0):
+                best = {"summary": summary, "pnr": pnr}
+    return best
+
+
+def latest_profile_map(summaries):
+    latest = {}
+    for summary in summaries:
+        for profile in profiles(summary):
+            latest.setdefault(profile, summary)
+    return latest
+
+
+def latest_item(summary, key):
+    items = summary.get(key, [])
+    return items[-1] if items else None
+
+
+def total_field(items, key):
+    return sum(int(item.get(key, 0)) for item in items)
+
+
+def history_record(summary):
+    pnr = latest_item(summary, "pnr")
+    rvtrace = latest_item(summary, "rvtrace_audits")
+    coverage = rvtrace_coverage_record(summary.get("rvtrace_coverage"))
+    health = ci_health_record(summary.get("ci_health"))
+    p0_passes = summary.get("p0_linux_passes", [])
+    ci_summaries = summary.get("ci_summaries", [])
+    verify_summaries = summary.get("verify_summaries", [])
+
+    record = {
+        "schema_version": 1,
+        "timestamp": iso_utc(summary.get("_mtime", 0)),
+        "logdir": summary.get("logdir"),
+        "summary_path": summary.get("_summary_path"),
+        "profiles": profiles(summary),
+        "status": summary.get("status", "unknown"),
+        "ci_pass": total_field(ci_summaries, "pass"),
+        "ci_fail": total_field(ci_summaries, "fail"),
+        "verify_pass": total_field(verify_summaries, "pass"),
+        "verify_fail": total_field(verify_summaries, "fail"),
+        "p0_linux": bool(p0_passes),
+        "p0_linux_modes": [item.get("mode") or "unknown" for item in p0_passes],
+        "pnr": None,
+        "rvtrace": None,
+        "rvtrace_coverage": coverage,
+        "ci_health": health,
+    }
+    if pnr:
+        record["pnr"] = {
+            "fmax_mhz": pnr.get("fmax_mhz"),
+            "target_mhz": pnr.get("target_mhz"),
+            "program_finished": bool(pnr.get("program_finished")),
+            "source": pnr.get("source"),
+            "util": pnr.get("util", {}),
+        }
+    if rvtrace:
+        record["rvtrace"] = {
+            "tests": rvtrace.get("tests"),
+            "retired": rvtrace.get("retired"),
+            "traps": rvtrace.get("traps"),
+            "amos": rvtrace.get("amos"),
+            "pte_updates": rvtrace.get("pte_updates"),
+            "priv_switches": rvtrace.get("priv_switches"),
+            "source": rvtrace.get("source"),
+            "trace_logdir": rvtrace.get("trace_logdir"),
+        }
+    return record
+
+
+def rvtrace_coverage_record(coverage):
+    if not coverage:
+        return None
+    tests = []
+    for item in coverage.get("tests", []):
+        tests.append(
+            {
+                "test": item.get("test"),
+                "retired": item.get("retired"),
+                "traps": item.get("traps"),
+                "amos": item.get("amos"),
+                "pte_updates": item.get("pte_updates"),
+                "priv_switches": item.get("priv_switches"),
+                "stores": item.get("stores"),
+                "writes": item.get("writes"),
+            }
+        )
+    return {
+        "status": coverage.get("status"),
+        "source": coverage.get("source"),
+        "totals": coverage.get("totals", {}),
+        "thresholds": coverage.get("thresholds", {}),
+        "floor_checks": floor_check_summary(coverage.get("coverage_floor_checks", [])),
+        "tests": tests,
+    }
+
+
+def ci_health_record(health):
+    if not health:
+        return None
+    checks = health.get("checks", [])
+    failed = sum(1 for item in checks if item.get("status") != "pass")
+    return {
+        "status": health.get("status"),
+        "source": health.get("source"),
+        "checks": {"pass": len(checks) - failed, "fail": failed},
+        "dashboard": health.get("dashboard"),
+        "history_jsonl": health.get("history_jsonl"),
+        "summary": health.get("summary", {}),
+    }
+
+
+def floor_check_summary(checks):
+    failed = sum(1 for item in checks if item.get("status") != "pass")
+    return {"pass": len(checks) - failed, "fail": failed}
+
+
+def merge_history(existing_records, summaries):
+    by_logdir = {}
+    for record in existing_records:
+        logdir = record.get("logdir")
+        if logdir:
+            by_logdir[logdir] = record
+    for summary in summaries:
+        record = history_record(summary)
+        if record.get("logdir"):
+            by_logdir[record["logdir"]] = record
+    records = list(by_logdir.values())
+    records.sort(key=lambda item: (item.get("timestamp", ""), item.get("logdir", "")))
+    return records
+
+
+def write_history(path, records):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = "".join(json.dumps(item, sort_keys=True) + "\n" for item in records)
+    path.write_text(text, encoding="utf-8")
+
+
+def trend_summary(records):
+    newest = list(reversed(records))
+    profile_counts = Counter()
+    for record in records:
+        for profile in record.get("profiles", []):
+            profile_counts[profile] += 1
+
+    pass_streak = 0
+    for record in newest:
+        if record.get("status") == "pass":
+            pass_streak += 1
+        else:
+            break
+
+    pnr_records = [record for record in records if record.get("pnr") and record["pnr"].get("fmax_mhz") is not None]
+    pnr_values = [record["pnr"].get("fmax_mhz", 0) for record in pnr_records]
+    latest_failure = next((record for record in newest if record.get("status") != "pass"), None)
+    latest_pnr = next((record for record in newest if record.get("pnr")), None)
+    best_pnr_record = max(
+        pnr_records,
+        key=lambda record: (record["pnr"].get("fmax_mhz", 0), record.get("timestamp", "")),
+        default=None,
+    )
+
+    pnr = None
+    if pnr_records:
+        pnr = {
+            "runs": len(pnr_records),
+            "latest_logdir": latest_pnr.get("logdir") if latest_pnr else None,
+            "latest_fmax_mhz": latest_pnr["pnr"].get("fmax_mhz") if latest_pnr else None,
+            "best_logdir": best_pnr_record.get("logdir") if best_pnr_record else None,
+            "best_fmax_mhz": max(pnr_values),
+            "min_fmax_mhz": min(pnr_values),
+        }
+
+    return {
+        "runs": len(records),
+        "profile_counts": dict(sorted(profile_counts.items())),
+        "current_pass_streak": pass_streak,
+        "latest_failure": {
+            "logdir": latest_failure.get("logdir"),
+            "status": latest_failure.get("status"),
+            "timestamp": latest_failure.get("timestamp"),
+        }
+        if latest_failure
+        else None,
+        "p0_linux_runs": sum(1 for record in records if record.get("p0_linux")),
+        "rvtrace_runs": sum(1 for record in records if record.get("rvtrace")),
+        "rvtrace_coverage_runs": sum(1 for record in records if record.get("rvtrace_coverage")),
+        "ci_health_runs": sum(1 for record in records if record.get("ci_health")),
+        "pnr": pnr,
+    }
+
+
+def trend_lines(trend, history_path):
+    profile_counts = trend.get("profile_counts", {})
+    profile_text = ", ".join(f"{name}={count}" for name, count in profile_counts.items()) or "none"
+    lines = [
+        "## Trend Snapshot",
+        "",
+        f"- history file: `{history_path}`",
+        f"- retained runs: `{trend['runs']}`",
+        f"- current pass streak: `{trend['current_pass_streak']}`",
+        f"- profile counts: `{profile_text}`",
+        f"- P0 Linux evidence runs: `{trend['p0_linux_runs']}`",
+        f"- RVTRACE audit runs: `{trend['rvtrace_runs']}`",
+        f"- RVTRACE coverage artifact runs: `{trend['rvtrace_coverage_runs']}`",
+        f"- CI evidence health runs: `{trend.get('ci_health_runs', 0)}`",
+    ]
+    if trend["pnr"]:
+        pnr = trend["pnr"]
+        lines.append(
+            f"- PnR Fmax range: `{pnr['min_fmax_mhz']:.2f}..{pnr['best_fmax_mhz']:.2f} MHz`, "
+            f"latest `{pnr['latest_fmax_mhz']:.2f} MHz` from `{pnr['latest_logdir']}`"
+        )
+    else:
+        lines.append("- PnR Fmax range: `none`")
+    if trend["latest_failure"]:
+        failure = trend["latest_failure"]
+        lines.append(
+            f"- latest failure: `{failure['logdir']}` status=`{failure['status']}` at `{failure['timestamp']}`"
+        )
+    else:
+        lines.append("- latest failure: `none retained`")
+    return lines
+
+
+def rel(path, root):
+    try:
+        return str(Path(path).relative_to(root))
+    except ValueError:
+        return str(path)
+
+
+def row(summary):
+    profile = ",".join(profiles(summary)) or "-"
+    status = summary.get("status", "unknown")
+    p0 = "yes" if summary.get("p0_linux_passes") else "-"
+    pnr = "-"
+    if summary.get("pnr"):
+        latest_pnr = summary["pnr"][-1]
+        pnr = f"{latest_pnr.get('fmax_mhz', 0):.2f}/{latest_pnr.get('target_mhz', 0):.0f}"
+    rvtrace = "-"
+    if summary.get("rvtrace_audits"):
+        latest_trace = summary["rvtrace_audits"][-1]
+        rvtrace = (
+            f"{latest_trace.get('retired', 0)} ret, "
+            f"{latest_trace.get('traps', 0)} trap, "
+            f"{latest_trace.get('amos', 0)} amo"
+        )
+    return profile, status, p0, pnr, rvtrace, summary.get("logdir", "-")
+
+
+def rvtrace_coverage_lines(summary):
+    coverage = summary.get("rvtrace_coverage") or {}
+    totals = coverage.get("totals", {})
+    floor_checks = coverage.get("coverage_floor_checks", [])
+    floor_fail = sum(1 for item in floor_checks if item.get("status") != "pass")
+    floor_pass = len(floor_checks) - floor_fail
+    lines = [
+        "## Latest RVTRACE Coverage",
+        "",
+        f"- logdir: `{summary.get('logdir')}`",
+        f"- source: `{coverage.get('source', '-')}`",
+        f"- status: `{coverage.get('status', 'unknown')}`",
+        f"- floor checks: pass={floor_pass} fail={floor_fail}",
+        (
+            "- totals: "
+            f"retired={totals.get('retired', 0)} traps={totals.get('traps', 0)} "
+            f"amos={totals.get('amos', 0)} pte_updates={totals.get('pte_updates', 0)} "
+            f"priv_switches={totals.get('priv_switches', 0)}"
+        ),
+        "",
+        "| Test | Retired | Trap | AMO | PTE | Priv | Stores | Writes |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for item in coverage.get("tests", []):
+        lines.append(
+            "| `{test}` | {retired} | {traps} | {amos} | {pte_updates} | "
+            "{priv_switches} | {stores} | {writes} |".format(**item)
+        )
+    return lines
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", default="logs", help="root directory to scan for summary.json files")
+    ap.add_argument("--limit", type=int, default=20, help="recent runs to include in the markdown table")
+    ap.add_argument("--json", default="logs/ci-dashboard.json", help="output dashboard JSON")
+    ap.add_argument("--markdown", default="logs/ci-dashboard.md", help="output dashboard markdown")
+    ap.add_argument("--history-jsonl", default="logs/ci-history.jsonl", help="retained trend history JSONL")
+    ap.add_argument("--trend-markdown", default="logs/ci-trend.md", help="output trend markdown")
+    args = ap.parse_args()
+
+    root = Path(args.root)
+    summaries = []
+    errors = []
+    if root.is_dir():
+        for path in root.rglob("summary.json"):
+            data, error = load_summary(path)
+            if error:
+                errors.append(error)
+            elif data:
+                summaries.append(data)
+    summaries.sort(key=lambda item: item["_mtime"], reverse=True)
+
+    latest_profiles = latest_profile_map(summaries)
+    latest_p0 = latest_with(summaries, "p0_linux_passes")
+    latest_trace = latest_with(summaries, "rvtrace_audits")
+    latest_coverage = latest_with(summaries, "rvtrace_coverage")
+    latest_health = latest_with(summaries, "ci_health")
+    best = best_fmax(summaries)
+    history_path = Path(args.history_jsonl)
+    existing_history, history_errors = load_history(history_path)
+    history = merge_history(existing_history, summaries)
+    trend = trend_summary(history)
+    errors.extend(history_errors)
+
+    dashboard = {
+        "root": str(root),
+        "runs": len(summaries),
+        "errors": errors,
+        "latest_by_profile": {profile: summary.get("logdir") for profile, summary in sorted(latest_profiles.items())},
+        "latest_p0_linux": latest_p0.get("logdir") if latest_p0 else None,
+        "latest_rvtrace": latest_trace.get("logdir") if latest_trace else None,
+        "latest_rvtrace_coverage": latest_coverage.get("logdir") if latest_coverage else None,
+        "latest_ci_health": latest_health.get("logdir") if latest_health else None,
+        "best_pnr": None,
+        "history": {
+            "path": str(history_path),
+            **trend,
+        },
+        "recent": [
+            {
+                "logdir": summary.get("logdir"),
+                "profiles": profiles(summary),
+                "status": summary.get("status"),
+                "p0_linux_passes": summary.get("p0_linux_passes", []),
+                "pnr": summary.get("pnr", []),
+                "rvtrace_audits": summary.get("rvtrace_audits", []),
+                "rvtrace_coverage": summary.get("rvtrace_coverage"),
+                "ci_health": summary.get("ci_health"),
+                "summary_path": summary.get("_summary_path"),
+            }
+            for summary in summaries[: args.limit]
+        ],
+    }
+    if best:
+        dashboard["best_pnr"] = {
+            "logdir": best["summary"].get("logdir"),
+            "fmax_mhz": best["pnr"].get("fmax_mhz"),
+            "target_mhz": best["pnr"].get("target_mhz"),
+            "util": best["pnr"].get("util", {}),
+        }
+
+    json_path = Path(args.json)
+    md_path = Path(args.markdown)
+    trend_md_path = Path(args.trend_markdown)
+    write_history(history_path, history)
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    md_path.parent.mkdir(parents=True, exist_ok=True)
+    trend_md_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.write_text(json.dumps(dashboard, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+    lines = [
+        "# CI Metrics Dashboard",
+        "",
+        f"- summaries scanned: `{len(summaries)}`",
+        f"- retained history runs: `{trend['runs']}`",
+        f"- latest P0 Linux evidence: `{dashboard['latest_p0_linux'] or 'none'}`",
+        f"- latest RVTRACE audit: `{dashboard['latest_rvtrace'] or 'none'}`",
+        f"- latest RVTRACE coverage: `{dashboard['latest_rvtrace_coverage'] or 'none'}`",
+        f"- latest CI evidence health: `{dashboard['latest_ci_health'] or 'none'}`",
+    ]
+    if dashboard["best_pnr"]:
+        best_pnr = dashboard["best_pnr"]
+        lines.append(
+            f"- best PnR Fmax: `{best_pnr['fmax_mhz']:.2f} MHz` "
+            f"at `{best_pnr['target_mhz']:.2f} MHz` target from `{best_pnr['logdir']}`"
+        )
+    else:
+        lines.append("- best PnR Fmax: `none`")
+    lines += [""] + trend_lines(trend, history_path)
+    if latest_coverage:
+        lines += [""] + rvtrace_coverage_lines(latest_coverage)
+    if latest_profiles:
+        lines += ["", "## Latest By Profile"]
+        for profile, summary in sorted(latest_profiles.items()):
+            lines.append(f"- `{profile}`: `{summary.get('logdir')}` status=`{summary.get('status')}`")
+
+    lines += [
+        "",
+        "## Recent Runs",
+        "",
+        "| Profile | Status | P0 Linux | PnR Fmax/Target MHz | RVTRACE | Logdir |",
+        "|---|---:|---:|---:|---|---|",
+    ]
+    for summary in summaries[: args.limit]:
+        profile, status, p0, pnr, rvtrace, logdir = row(summary)
+        lines.append(f"| `{profile}` | `{status}` | `{p0}` | `{pnr}` | {rvtrace} | `{logdir}` |")
+    if errors:
+        lines += ["", "## Parse Warnings"]
+        for error in errors[:20]:
+            lines.append(f"- `{error}`")
+    md_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    trend_md_path.write_text(
+        "# CI Trend History\n\n" + "\n".join(trend_lines(trend, history_path)) + "\n", encoding="utf-8"
+    )
+
+    print(
+        "CI_DASHBOARD: PASS "
+        f"json={json_path} markdown={md_path} history={history_path} trend={trend_md_path} "
+        f"runs={len(summaries)} history_runs={len(history)}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

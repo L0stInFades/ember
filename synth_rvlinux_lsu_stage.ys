@@ -1,0 +1,5 @@
+# Synthesize the rvlinux multi-cycle load/store stage controller to ECP5.
+read_verilog rvlinux_lsu_stage.v
+hierarchy -top rvlinux_lsu_stage
+synth_ecp5 -top rvlinux_lsu_stage -json syn_rvlinux_lsu_stage.json
+stat

@@ -1,0 +1,6 @@
+# Synthesize the single-cycle "usable chip" rvcore to ECP5 for area/Fmax.
+read_verilog rvcore.v
+read_verilog syn_top_rvcore.v
+hierarchy -top syn_top_rvcore
+synth_ecp5 -top syn_top_rvcore -json syn_rvcore.json
+stat

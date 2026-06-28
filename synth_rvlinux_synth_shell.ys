@@ -1,0 +1,22 @@
+# Synthesize rvlinux.v through its multicycle synthesizable shell path.
+read_verilog cache.v
+read_verilog cache_client_arbiter2.v
+read_verilog mem_arbiter2.v
+read_verilog slowmem.v
+read_verilog l1_mem_system.v
+read_verilog sv32_ptw.v
+read_verilog rvlinux_mem_boundary.v
+read_verilog rvlinux_fetch_stage.v
+read_verilog rvlinux_lsu_stage.v
+read_verilog rvlinux_amo_stage.v
+read_verilog rvlinux_stage_cluster.v
+read_verilog rvlinux_decode_stage.v
+read_verilog rvlinux_csr_trap_stage.v
+read_verilog rvlinux_muldiv_stage.v
+read_verilog rvlinux_mmio_stage.v
+read_verilog rvlinux_min_core_fsm.v
+read_verilog -D RVLINUX_SYNTH_SHELL rvlinux.v
+hierarchy -top rvlinux \
+    -chparam MEMWORDS 16384
+synth_ecp5 -top rvlinux -json syn_rvlinux_synth_shell.json
+stat

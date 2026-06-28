@@ -41,6 +41,5 @@ int main(void){
   shared=0;
   CHECK("sc_success", lrsc(&shared), 0);
   CHECK("lrsc_val", shared, 1);
-  report();
-  return 0;
+  return report();
 }

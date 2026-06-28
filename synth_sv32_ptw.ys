@@ -1,0 +1,5 @@
+# Synthesize the sequential Sv32 page-table walker to ECP5.
+read_verilog sv32_ptw.v
+hierarchy -top sv32_ptw -chparam MEMWORDS 16384 -chparam RAMBASE 2147483648
+synth_ecp5 -top sv32_ptw -json syn_sv32_ptw.json
+stat
