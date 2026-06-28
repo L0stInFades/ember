@@ -15,6 +15,13 @@ RVTRACE_RE = re.compile(
     r"priv_switches=(?P<priv_switches>\d+) uart_writes=(?P<uart_writes>\d+) "
     r"syscon_writes=(?P<syscon_writes>\d+) logdir=(?P<trace_logdir>.+)"
 )
+SPIKE_PREFIX_HEADER_RE = re.compile(r"^=== spike-prefix (\S+) ===$")
+SPIKE_PREFIX_RE = re.compile(
+    r"SPIKE_TRACE_PREFIX: PASS rows=(?P<rows>\d+) ret=(?P<ret>\d+) trap=(?P<trap>\d+) "
+    r"spike_commits=(?P<spike_commits>\d+) first_pc=(?P<first_pc>0x[0-9a-fA-F]+) "
+    r"last_pc=(?P<last_pc>0x[0-9a-fA-F]+)(?P<rest>.*)"
+)
+P1_EXTERNAL_RE = re.compile(r"P1_EXTERNAL: PASS logdir=(?P<logdir>.+)")
 FMAX_RE = re.compile(r"Max frequency .*: ([0-9.]+) MHz \(PASS at ([0-9.]+) MHz\)")
 PNR_UTIL_RE = re.compile(r"(DP16KD|TRELLIS_FF|TRELLIS_COMB):\s+(\d+)/\s*(\d+)\s+(\d+)%")
 
@@ -32,6 +39,7 @@ def parse_log(path):
         "path": str(path),
         "ci_summaries": [],
         "verify_summaries": [],
+        "p1_external": [],
         "rvtrace_audits": [],
         "p0_linux_pass": False,
         "p0_linux_mode": None,
@@ -55,6 +63,49 @@ def parse_log(path):
         item = {key: int(value) for key, value in match.groupdict().items() if key != "trace_logdir"}
         item["trace_logdir"] = match.group("trace_logdir")
         metrics["rvtrace_audits"].append(item)
+
+    spike_entries = []
+    current_spike_test = None
+    for line in text.splitlines():
+        header = SPIKE_PREFIX_HEADER_RE.match(line)
+        if header:
+            current_spike_test = header.group(1)
+            continue
+        match = SPIKE_PREFIX_RE.search(line)
+        if match and current_spike_test:
+            rest = match.group("rest")
+            stopped_before = re.search(r"stopped_before=(0x[0-9a-fA-F]+)", rest)
+            spike_entries.append(
+                {
+                    "test": current_spike_test,
+                    "rows": int(match.group("rows")),
+                    "ret": int(match.group("ret")),
+                    "traps": int(match.group("trap")),
+                    "spike_commits": int(match.group("spike_commits")),
+                    "first_pc": match.group("first_pc"),
+                    "last_pc": match.group("last_pc"),
+                    "stopped_before": stopped_before.group(1) if stopped_before else None,
+                    "terminal_trap": "terminal_trap=1" in rest,
+                }
+            )
+            continue
+        match = P1_EXTERNAL_RE.search(line)
+        if match:
+            metrics["p1_external"].append(
+                {
+                    "status": "pass",
+                    "logdir": match.group("logdir"),
+                    "test_count": len(spike_entries),
+                    "rows": sum(item["rows"] for item in spike_entries),
+                    "ret": sum(item["ret"] for item in spike_entries),
+                    "traps": sum(item["traps"] for item in spike_entries),
+                    "spike_commits": sum(item["spike_commits"] for item in spike_entries),
+                    "terminal_traps": sum(1 for item in spike_entries if item["terminal_trap"]),
+                    "tests": spike_entries,
+                }
+            )
+            spike_entries = []
+            current_spike_test = None
 
     if "P0_LINUX_GATE: PASS" in text:
         metrics["p0_linux_pass"] = True
@@ -125,6 +176,7 @@ def main():
         "logs_scanned": len(logs),
         "ci_summaries": [],
         "verify_summaries": [],
+        "p1_external": [],
         "rvtrace_audits": [],
         "rvtrace_coverage": None,
         "ci_health": None,
@@ -134,7 +186,7 @@ def main():
 
     for path in logs:
         item = parse_log(path)
-        for key in ("ci_summaries", "verify_summaries", "rvtrace_audits", "pnr"):
+        for key in ("ci_summaries", "verify_summaries", "p1_external", "rvtrace_audits", "pnr"):
             for entry in item[key]:
                 entry = dict(entry)
                 entry["source"] = rel(path, logdir)
@@ -196,6 +248,13 @@ def main():
         lines += ["", "## Verify"]
         for item in summary["verify_summaries"]:
             lines.append(f"- pass={item['pass']} fail={item['fail']} source=`{item['source']}`")
+    if summary["p1_external"]:
+        lines += ["", "## P1 External"]
+        for item in summary["p1_external"]:
+            lines.append(
+                "- status={status} tests={test_count} ret={ret} traps={traps} "
+                "spike_commits={spike_commits} terminal_traps={terminal_traps} source=`{source}`".format(**item)
+            )
     if summary["rvtrace_audits"]:
         lines += ["", "## RVTRACE"]
         for item in summary["rvtrace_audits"]:

@@ -285,6 +285,17 @@ The pushed source commit `eb8d405` also passed hosted macOS quick CI as run
 `28333237998`: quick `pass=1 fail=0`, `verify.sh` `pass=6 fail=0`, and retained
 RVTRACE audit totals of 17 tests, 71,682 retired instructions, 27 traps, 6 AMOs,
 12 PTE updates, 25 privilege switches, and 48/48 floor checks.
+The retained metrics path now treats P1 external as first-class health evidence:
+`tools/collect_ci_metrics.py` parses `SPIKE_TRACE_PREFIX` and `P1_EXTERNAL`
+summaries, `tools/render_ci_dashboard.py` records latest/trend P1 external runs,
+and `tools/check_ci_dashboard.py` requires at least one retained P1 external run
+with 8 tests and one terminal trap by default. A fresh `./verify_ci.sh p1` passes
+in `logs/ci-p1-20260629-p1-external` with 8 external tests, 9,167 compared
+retired rows, 3 compared trap rows, 9,167 Spike commits, and 1 terminal-trap
+comparison; `logs/ci-evidence-health-20260629-p1-external-v2` passes 42/42
+checks. Negative checks for `--min-p1-external-runs 3`,
+`--min-p1-external-tests 9`, and `--min-p1-external-terminal-traps 2` fail as
+expected.
 
 ---
 

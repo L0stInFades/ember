@@ -99,6 +99,9 @@ def main():
     ap.add_argument("--min-history-runs", type=int, default=1)
     ap.add_argument("--min-pass-streak", type=int, default=1)
     ap.add_argument("--min-p0-linux-runs", type=int, default=1)
+    ap.add_argument("--min-p1-external-runs", type=int, default=1)
+    ap.add_argument("--min-p1-external-tests", type=int, default=8)
+    ap.add_argument("--min-p1-external-terminal-traps", type=int, default=1)
     ap.add_argument("--min-rvtrace-runs", type=int, default=1)
     ap.add_argument("--min-rvtrace-coverage-runs", type=int, default=1)
     ap.add_argument("--min-pnr-runs", type=int, default=1)
@@ -112,6 +115,7 @@ def main():
     ap.add_argument("--min-rvtrace-priv-switches", type=int, default=25)
     ap.add_argument("--min-rvtrace-floor-checks", type=int, default=48)
     ap.add_argument("--no-require-p0-linux", action="store_true")
+    ap.add_argument("--no-require-p1-external", action="store_true")
     ap.add_argument("--no-require-rvtrace", action="store_true")
     ap.add_argument("--no-require-rvtrace-coverage", action="store_true")
     ap.add_argument("--no-require-pnr", action="store_true")
@@ -185,6 +189,42 @@ def main():
                 p0_summary.get("status") == "pass",
                 f"status={p0_summary.get('status', 'unknown')}",
                 p0_source,
+            )
+
+    if not args.no_require_p1_external:
+        check_min(
+            checks,
+            "P1 external evidence runs",
+            int(history.get("p1_external_runs", 0)),
+            args.min_p1_external_runs,
+            evidence=str(history_path),
+        )
+        p1_logdir = dashboard.get("latest_p1_external")
+        add_check(checks, "latest P1 external evidence exists", bool(p1_logdir), f"logdir={p1_logdir or 'none'}")
+        p1_summary, p1_source = load_summary(dashboard, p1_logdir)
+        latest_p1 = latest_item(p1_summary.get("p1_external", [])) if p1_summary else None
+        add_check(checks, "latest P1 external summary", bool(latest_p1), f"source={p1_source or 'none'}", p1_source)
+        if latest_p1:
+            add_check(
+                checks,
+                "latest P1 external run passed",
+                latest_p1.get("status") == "pass",
+                f"status={latest_p1.get('status', 'unknown')}",
+                p1_source,
+            )
+            check_min(
+                checks,
+                "P1 external tests",
+                int(latest_p1.get("test_count", 0)),
+                args.min_p1_external_tests,
+                evidence=p1_source,
+            )
+            check_min(
+                checks,
+                "P1 external terminal traps",
+                int(latest_p1.get("terminal_traps", 0)),
+                args.min_p1_external_terminal_traps,
+                evidence=p1_source,
             )
 
     if not args.no_require_pnr:
@@ -370,6 +410,7 @@ def main():
             "history_runs": len(history_records),
             "pass_streak": int(history.get("current_pass_streak", 0)),
             "latest_p0_linux": dashboard.get("latest_p0_linux"),
+            "latest_p1_external": dashboard.get("latest_p1_external"),
             "latest_rvtrace": dashboard.get("latest_rvtrace"),
             "latest_rvtrace_coverage": dashboard.get("latest_rvtrace_coverage"),
             "best_pnr": dashboard.get("best_pnr"),

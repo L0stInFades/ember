@@ -95,6 +95,10 @@ regression:
   Spike comparison covers the 97 committed rows before the first misaligned load
   and matches the terminal exception against the DUT TRAP row (`cause=4`,
   `tval=0x8000146d` in the current build).
+- The metrics/dashboard layer now retains this external P1 evidence: `p1`
+  profile summaries include external test count, compared retired rows, Spike
+  commit count, and terminal-trap coverage, and evidence-health requires at least
+  one retained P1 external run with 8 tests and one terminal trap.
 - This is a Spike prefix gate, not full RVVI. RISCOF DUT/reference plugins,
   complete Spike comparison after the final `mmu`/`utrap` `ecall` trap and after
   terminal misaligned exceptions, device-complete comparison, and full Spike/RVVI
@@ -916,22 +920,27 @@ with `verify.sh` `pass=6 fail=0`, and
 with 48/48 floor checks passing.
 `tools/collect_ci_metrics.py` now turns any `verify_ci.sh` log directory into
 machine-readable `summary.json` and human-readable `summary.md`, collecting CI
-pass/fail, `verify.sh` pass/fail, retained RVTRACE coverage, CI evidence health,
-P0 Linux gate status, and PnR Fmax/resource metrics. `verify_ci.sh` writes those
+pass/fail, `verify.sh` pass/fail, P1 external Spike-prefix evidence, retained
+RVTRACE coverage, CI evidence health, P0 Linux gate status, and PnR
+Fmax/resource metrics. `verify_ci.sh` writes those
 artifacts automatically at the end of every profile. `tools/render_ci_dashboard.py` then scans
 `logs/**/summary.json` and refreshes `logs/ci-dashboard.json` plus
-`logs/ci-dashboard.md`, so the latest P0 Linux evidence, latest RVTRACE audit, best
-PnR Fmax, latest run per profile, and recent-run table are visible without manually
+`logs/ci-dashboard.md`, so the latest P0 Linux evidence, latest P1 external
+evidence, latest RVTRACE audit, best PnR Fmax, latest run per profile, and
+recent-run table are visible without manually
 reading long logs. The same renderer now maintains a de-duplicated retained trend
 history in `logs/ci-history.jsonl` and a human-readable `logs/ci-trend.md`, tracking
-pass streak, profile counts, P0 Linux evidence count, RVTRACE audit/coverage counts,
-latest CI evidence health, latest per-test RVTRACE coverage/floor-check status, and
-PnR Fmax range across runs. `tools/check_ci_dashboard.py` turns those retained
+pass streak, profile counts, P0 Linux evidence count, P1 external evidence count,
+RVTRACE audit/coverage counts, latest CI evidence health, latest per-test RVTRACE
+coverage/floor-check status, and PnR Fmax range across runs.
+`tools/check_ci_dashboard.py` turns those retained
 artifacts into a cheap evidence-health gate: by default it requires parse-clean
-dashboard/history files, a passing streak, retained P0 Linux login evidence, retained
-PnR evidence at or above the 40 MHz target, retained RVTRACE coverage for 17 tests
-with at least 71,000 retired instructions, 27 traps, 6 AMOs, 12 PTE updates,
-25 privilege switches, and 48 passing per-test floor checks. The
+dashboard/history files, a passing streak, retained P0 Linux login evidence,
+retained P1 external Spike-prefix evidence for 8 tests with at least one terminal
+trap, retained PnR evidence at or above the 40 MHz target, retained RVTRACE
+coverage for 17 tests with at least 71,000 retired instructions, 27 traps, 6
+AMOs, 12 PTE updates, 25 privilege switches, and 48 passing per-test floor
+checks. The
 `./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-misalign`, writing
 `ci_health.json` / `ci_health.md` with 36/36 checks passing; negative checks also
 failed as intended for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`,
@@ -939,6 +948,14 @@ failed as intended for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`,
 `wpfault:pte_updates=3`, `sum:pte_updates=3`, `badpte:traps=4`,
 `superpage:traps=4`, `amo_mmu:pte_updates=4`, `misalign:traps=3`, plus
 `--min-rvtrace-tests 18`.
+A newer local P1/evidence-health increment passed `./verify_ci.sh p1` in
+`logs/ci-p1-20260629-p1-external`, where the retained summary records 8 external
+Spike-prefix tests, 9,167 compared retired rows, 3 compared trap rows, 9,167
+Spike commits, and 1 terminal-trap comparison. The follow-up
+`logs/ci-evidence-health-20260629-p1-external-v2` run passed with 42/42 checks,
+and negative checks for `--min-p1-external-runs 3`,
+`--min-p1-external-tests 9`, and `--min-p1-external-terminal-traps 2` failed as
+intended.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -954,14 +971,15 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 31 summaries scanned, 31 retained history runs, a 2-run pass streak,
-profile counts of `evidence-health=11`, `p0-evidence=1`, `p1-trace-audit=11`, and
-`quick=8`, 11 RVTRACE coverage artifact runs, 11 CI evidence
-health runs, latest P0 Linux evidence from
-`logs/ci-p0-evidence-20260628-233213`, latest RVTRACE audit/coverage from
-`logs/ci-p1-trace-audit-20260629-misalign`, latest CI evidence health from
-`logs/ci-evidence-health-20260629-misalign`, and best PnR at **53.94 MHz** for the
-40 MHz target. The latest coverage table shows 48/48 floor checks passing:
+reports 39 summaries scanned, 39 retained history runs, a 10-run pass streak,
+profile counts of `evidence-health=13`, `p0-evidence=1`, `p1=2`,
+`p1-trace-audit=13`, and `quick=10`, 2 P1 external evidence runs, 13 RVTRACE
+coverage artifact runs, 13 CI evidence health runs, latest P0 Linux evidence from
+`logs/ci-p0-evidence-20260628-233213`, latest P1 external evidence from
+`logs/ci-p1-20260629-p1-external`, latest RVTRACE audit/coverage from
+`logs/github-p1-trace-audit-28333237998`, latest CI evidence health from
+`logs/ci-evidence-health-20260629-p1-external-v2`, and best PnR at **53.94 MHz**
+for the 40 MHz target. The latest coverage table shows 48/48 floor checks passing:
 `isa`/`amotest` plus `amo_mmu` cover the 6 AMOs, `mmu` covers the original PTE
 update and 3 traps,
 `utrap` covers the user trap plus 3 privilege switches, and `mprv` contributes
