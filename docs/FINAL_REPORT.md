@@ -793,11 +793,11 @@ The retained `verify_ci.sh p1-trace-audit` profile over those traces passed in
 instructions, 14 traps, 5 AMOs, 7 PTE updates, 17 privilege switches, and 31/31
 coverage-floor checks.
 Hosted macOS GitHub Actions now runs both quick and the retained RVTRACE coverage
-audit. Run `28329835965` for commit `246bc30` passed `quick regression`; artifact
-summary `logs/github-quick-28329835965` reports quick `pass=6 fail=0`, and
-`logs/github-p1-trace-audit-28329835965` reports the same 11-test /
-39,918-retired / 12-trap / 5-AMO / 5-PTE-update / 15-privilege-switch baseline
-with all 27 coverage-floor checks passing.
+audit. Run `28330265212` for commit `6a3a0ba` passed `quick regression`; artifact
+summary `logs/github-quick-28330265212` reports quick `pass=1 fail=0`, and
+`logs/github-p1-trace-audit-28330265212` reports the 12-test /
+45,586-retired / 14-trap / 5-AMO / 7-PTE-update / 17-privilege-switch baseline
+with all 31 coverage-floor checks passing.
 `tools/collect_ci_metrics.py` now turns any `verify_ci.sh` log directory into
 machine-readable `summary.json` and human-readable `summary.md`, collecting CI
 pass/fail, `verify.sh` pass/fail, retained RVTRACE coverage, CI evidence health,
