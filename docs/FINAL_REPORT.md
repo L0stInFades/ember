@@ -1149,6 +1149,11 @@ ACT/Spike tests with `group_count=12` and the expected group CSV; refreshed
 evidence-health passes in `logs/ci-evidence-health-20260629-act4-groups`; a
 pre-refresh check fails on missing groups, and an intentionally wrong
 `--require-p1-act4-spike-groups` list fails against the retained group CSV.
+Source commit `9227152` then passed hosted macOS CI as run `28338350815`:
+quick `pass=1 fail=0`, and `logs/github-p1-external-28338350815` records 17
+Spike-prefix tests (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus 106/106 ACT/Spike tests with `group_count=12` and the
+expected group CSV.
 `logs/p1-act4-spike-misalign-candidates-20260629` confirms the upstream ACT
 `Misalign` and `MisalignZca` groups remain excluded: they are tagged
 `MISALIGNED_LDST: true` and validate successful non-aligned load/store behavior,

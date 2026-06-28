@@ -467,7 +467,12 @@ Spike-prefix tests plus 106/106 ACT/Spike tests and the expected group CSV;
 `logs/ci-evidence-health-20260629-act4-groups` passes the refreshed 48-check
 health gate; the pre-refresh dashboard check fails on missing groups; and an
 intentionally shortened `--require-p1-act4-spike-groups` list fails against the
-retained CSV. `logs/p1-act4-spike-misalign-candidates-20260629` records the
+retained CSV. The pushed source commit `9227152` passed hosted macOS CI as run
+`28338350815`: quick `pass=1 fail=0`, and hosted P1 external
+`logs/github-p1-external-28338350815` records 17 Spike-prefix tests
+(`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus 106/106
+ACT/Spike tests with `group_count=12` and the expected group CSV.
+`logs/p1-act4-spike-misalign-candidates-20260629` records the
 negative `Misalign`/`MisalignZca` ACT result: those groups require
 `MISALIGNED_LDST: true` successful non-aligned load/store behavior, while Ember
 currently implements precise misaligned-access traps.
