@@ -546,6 +546,12 @@ nested GitHub downloads remain checkable after they leave the recent-run table.
 Local `logs/ci-evidence-health-20260629-act4-group-counts-v2` passes 95/95
 checks; a negative `--require-p1-act4-spike-group-counts` with `Zca=25` fails
 against the retained `Zca=26` count.
+Hosted CI run `28339985935` for source commit `b55bf85` passed with quick
+regression in 1m37s and P1 external in 8m49s. Downloaded artifact
+`github-p1-external-28339985935/summary.json` is `status=pass`, retains the same
+17-test P1 external set with `ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`, and records ACT/Spike `group_tests` exactly as
+`I=39,M=8,Zmmul=4,Zaamo=9,Zalrsc=2,Zca=26,Zicsr=6,Zicntr=2,Zifencei=1,Zihintpause=1,Zihintntl=4,ZihintntlZca=4`.
 
 ---
 

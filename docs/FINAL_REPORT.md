@@ -1230,6 +1230,12 @@ adding a dashboard-root fallback that resolves hosted artifact summaries by
 matching their internal `logdir` once they have fallen out of the recent-run
 table. A negative `--require-p1-act4-spike-group-counts` with `Zca=25` fails
 against the retained `Zca=26` count.
+Hosted CI run `28339985935` for source commit `b55bf85` passed with quick
+regression in 1m37s and P1 external in 8m49s. Its downloaded P1 artifact
+`github-p1-external-28339985935/summary.json` is `status=pass`, retains the same
+17-test P1 external set with `ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`, and records ACT/Spike `group_tests` exactly as
+`I=39,M=8,Zmmul=4,Zaamo=9,Zalrsc=2,Zca=26,Zicsr=6,Zicntr=2,Zifencei=1,Zihintpause=1,Zihintntl=4,ZihintntlZca=4`.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
