@@ -8,9 +8,11 @@ expected signatures with Spike, recompiles the tests in ACT self-check mode, and
 runs the resulting ELFs on the Ember RTL testbench.
 
 It is intentionally narrower than full ACT4/UDB certification: the default gate
-runs the pinned upstream RV32 `I`, `M`, `Zaamo`, `Zalrsc`, `Zca`, `Zicsr`, and
-`Zifencei` assembly tests, but not generated UDB flows or the full implemented
-extension matrix.
+runs the pinned upstream RV32 `I`, `M`, `Zmmul`, `Zaamo`, `Zalrsc`, `Zca`,
+`Zicsr`, `Zicntr`, `Zifencei`, `Zihintpause`, `Zihintntl`, and
+`ZihintntlZca` assembly tests, but not generated UDB flows or the full
+implemented extension matrix. `Zihpm` remains excluded because Ember does not
+implement the optional HPM counter CSR bank.
 
 The upstream `Zicsr` tests use no-`C` MARCH metadata, but Ember decodes
 compressed instructions and advertises `misa.C`. The smoke therefore runs that

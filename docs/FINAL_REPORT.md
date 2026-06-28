@@ -116,17 +116,19 @@ regression:
   uses `p1/act4/ember-rv32i/` DUT macros/linker support, compiles upstream ACT4
   RV32I tests, generates expected signatures with Spike, recompiles in
   `RVTEST_SELFCHECK` mode, and runs the ELFs on the Ember RTL testbench.
-  The default set is 91 pinned upstream RV32 `I`, `M`, `Zaamo`, `Zalrsc`,
-  `Zca`, `Zicsr`, and `Zifencei` tests. Because Ember implements compressed
-  instructions and now advertises `misa.C`, the `Zicsr` group is compared
-  against Spike with a C-aware `rv32i_zicsr_zifencei_zca` reference ISA so
-  `mepc`/`sepc` WARL low-bit behavior matches the DUT.
+  The default set is 106 pinned upstream RV32 `I`, `M`, `Zmmul`, `Zaamo`,
+  `Zalrsc`, `Zca`, `Zicsr`, `Zicntr`, `Zifencei`, `Zihintpause`, `Zihintntl`,
+  and `ZihintntlZca` tests. Because Ember implements compressed instructions
+  and now advertises `misa.C`, the `Zicsr` group is compared against Spike with
+  a C-aware `rv32i_zicsr_zifencei_zca` reference ISA so `mepc`/`sepc` WARL
+  low-bit behavior matches the DUT. `Zihpm` remains excluded because the HPM
+  counter CSR bank is not implemented.
 - The metrics/dashboard layer now retains this external P1 evidence: `p1`
   profile summaries include external test count, compared retired rows, Spike
   commit count, non-terminal trap-exception checks, and terminal-trap coverage,
   plus the ACT/Spike smoke pass count. Evidence-health requires at least one
   retained P1 external run with 17 tests, 23 ordinary trap-exception checks, one
-  terminal trap, and 91 ACT/Spike smoke tests.
+  terminal trap, and 106 ACT/Spike smoke tests.
 - This is a Spike prefix plus ACT/Spike smoke gate, not full RVVI or full ACT4
   certification. Full ACT4/UDB remains future work; the local system Ruby is
   still 2.6 while upstream UDB wants Ruby 3.2+. RISCOF/ACT4 DUT/reference plugins,
@@ -1116,6 +1118,18 @@ Spike-prefix gate (`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus
 intended against the retained value of 91. A local quick profile reached all
 code-related checks (`directed`, `rvtests`, `trace`, `reftrace`, and `cache`)
 but stopped at `vtop_synth` because this host currently lacks `verilator`.
+The default ACT/Spike smoke now adds `Zmmul`, `Zicntr`, `Zihintpause`,
+`Zihintntl`, and `ZihintntlZca` to the existing passing set. The candidate run
+`logs/p1-act4-spike-candidates-20260629` passes those 15 newly added tests, and
+`logs/p1-act4-spike-zihpm-negative-20260629` confirms `Zihpm` remains excluded
+because Ember does not implement the optional HPM counter CSR bank. The expanded
+default run `logs/p1-act4-spike-expanded-default-20260629` passes 106/106; the
+full local P1 profile `logs/ci-p1-20260629-act4-spike-106` passes with the same
+17-test Spike-prefix gate (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus 106/106 ACT/Spike tests; evidence-health passes in
+`logs/ci-evidence-health-20260629-act4-spike-106`; and
+`python3 tools/check_ci_dashboard.py --min-p1-act4-spike-tests 107` fails as
+intended against the retained value of 106.
 Source commit `f7d794e` then passed hosted macOS CI as run `28337247599`:
 quick `pass=1 fail=0`, retained RVTRACE audit remains green, and
 `logs/github-p1-external-28337247599` records the same 17-test Spike-prefix gate

@@ -101,7 +101,7 @@ def main():
     ap.add_argument("--min-p0-linux-runs", type=int, default=1)
     ap.add_argument("--min-p1-external-runs", type=int, default=1)
     ap.add_argument("--min-p1-external-tests", type=int, default=17)
-    ap.add_argument("--min-p1-act4-spike-tests", type=int, default=91)
+    ap.add_argument("--min-p1-act4-spike-tests", type=int, default=106)
     ap.add_argument("--min-p1-external-trap-exceptions", type=int, default=23)
     ap.add_argument("--min-p1-external-terminal-traps", type=int, default=1)
     ap.add_argument("--min-rvtrace-runs", type=int, default=1)
