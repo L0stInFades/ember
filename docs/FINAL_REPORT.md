@@ -1059,6 +1059,11 @@ follow-up `logs/ci-evidence-health-20260629-act4-spike` run passed 47/47 checks
 under the new retained-evidence floor, and
 `python3 tools/check_ci_dashboard.py --min-p1-act4-spike-tests 7` fails as
 intended against the retained 6-test smoke result.
+Source commit `394657a` passed hosted macOS CI as run `28335561543`: quick
+`pass=1 fail=0`, retained RVTRACE audit still reports 17 tests, 71,683 retired
+instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and
+48/48 floor checks, and `logs/github-p1-external-28335561543` records the
+17-test Spike-prefix gate plus 6/6 ACT/Spike smoke tests.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on

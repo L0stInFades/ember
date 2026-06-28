@@ -380,6 +380,12 @@ passes 47/47 checks under the new default ACT/Spike floor, and a negative
 Full ACT4/UDB generation and certification remain future work; the local system
 Ruby is still 2.6, while upstream UDB currently wants Ruby 3.2+, so that path is
 not part of this smoke.
+The pushed source commit `394657a` then passed hosted macOS CI as run
+`28335561543`: quick `pass=1 fail=0`, retained RVTRACE audit still reports 17
+tests, 71,683 retired instructions, 27 traps, 6 AMOs, 12 PTE updates, 25
+privilege switches, and 48/48 floor checks, and the hosted P1 external summary
+now includes both the 17-test Spike-prefix gate (`ret=70670`,
+`trap_exceptions=23`, `terminal_traps=1`) and 6/6 ACT/Spike smoke tests.
 
 ---
 
