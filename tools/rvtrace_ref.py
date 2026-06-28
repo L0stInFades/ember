@@ -398,6 +398,9 @@ class RV32IMARef:
             return self._xlate_fault()
         pte1 = self.mem.load_u32(pte1_pa)
         if self._pte_invalid(pte1):
+            if get_bit(pte1, 0) and self._pte_leaf(pte1):
+                pa = u32((((pte1 >> 20) & 0x3FF) << 22) | (va & 0x3FFFFF))
+                return self._xlate_fault(pa, pte1_pa, pte1)
             return self._xlate_fault()
 
         if self._pte_leaf(pte1):
@@ -410,7 +413,12 @@ class RV32IMARef:
             if not self.mem.in_ram(pte0_pa):
                 return self._xlate_fault()
             pte0 = self.mem.load_u32(pte0_pa)
-            if self._pte_invalid(pte0) or not self._pte_leaf(pte0):
+            if self._pte_invalid(pte0):
+                if get_bit(pte0, 0) and self._pte_leaf(pte0):
+                    pa = u32((((pte0 >> 10) & 0xFFFFF) << 12) | (va & 0xFFF))
+                    return self._xlate_fault(pa, pte0_pa, pte0)
+                return self._xlate_fault()
+            if not self._pte_leaf(pte0):
                 return self._xlate_fault()
             leaf = pte0
             leaf_pa = pte0_pa

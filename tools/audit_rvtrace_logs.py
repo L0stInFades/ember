@@ -23,8 +23,9 @@ DEFAULT_TESTS = [
     "ifault",
     "wpfault",
     "sum",
+    "badpte",
 ]
-TRAP_ALLOWED = {"mmu", "utrap", "mprv", "mxr", "upage", "ifault", "wpfault", "sum"}
+TRAP_ALLOWED = {"mmu", "utrap", "mprv", "mxr", "upage", "ifault", "wpfault", "sum", "badpte"}
 EXPECT_M_PRIV = {"isa", "amotest", "ctest", "shtest", "mtest"}
 DEFAULT_COVERAGE_FLOORS = {
     "isa": {"retired": 600, "amos": 3},
@@ -40,6 +41,7 @@ DEFAULT_COVERAGE_FLOORS = {
     "ifault": {"retired": 9000, "traps": 2, "priv_switches": 2},
     "wpfault": {"retired": 5000, "traps": 2, "pte_updates": 2, "priv_switches": 2},
     "sum": {"retired": 5000, "traps": 3, "pte_updates": 2, "priv_switches": 2},
+    "badpte": {"retired": 5000, "traps": 3, "priv_switches": 2},
 }
 REF_RE = re.compile(
     r"RVTRACE_REF: PASS rows=(?P<rows>\d+) retired=(?P<retired>\d+) traps=(?P<traps>\d+) "
@@ -191,10 +193,10 @@ def main():
     ap.add_argument("--logdir", required=True, help="directory containing rvtrace_<test>.csv files")
     ap.add_argument("--tests", nargs="+", default=DEFAULT_TESTS, help="tests to audit")
     ap.add_argument("--base", default="0x80000000", help="RAM base address")
-    ap.add_argument("--min-total-traps", type=int, default=17)
+    ap.add_argument("--min-total-traps", type=int, default=20)
     ap.add_argument("--min-total-amos", type=int, default=5)
     ap.add_argument("--min-total-pte-updates", type=int, default=9)
-    ap.add_argument("--min-total-priv-switches", type=int, default=19)
+    ap.add_argument("--min-total-priv-switches", type=int, default=21)
     ap.add_argument(
         "--no-default-coverage-floors",
         action="store_true",
