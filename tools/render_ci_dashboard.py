@@ -150,6 +150,7 @@ def p1_external_record(item):
                 "rows": test.get("rows"),
                 "ret": test.get("ret"),
                 "traps": test.get("traps"),
+                "trap_exceptions": test.get("trap_exceptions", 0),
                 "spike_commits": test.get("spike_commits"),
                 "terminal_trap": bool(test.get("terminal_trap")),
             }
@@ -161,6 +162,7 @@ def p1_external_record(item):
         "test_count": item.get("test_count"),
         "ret": item.get("ret"),
         "traps": item.get("traps"),
+        "trap_exceptions": item.get("trap_exceptions", 0),
         "spike_commits": item.get("spike_commits"),
         "terminal_traps": item.get("terminal_traps"),
         "tests": tests,
@@ -341,6 +343,7 @@ def row(summary):
         p1_external = (
             f"{latest_p1.get('test_count', 0)} tests, "
             f"{latest_p1.get('ret', 0)} ret, "
+            f"{latest_p1.get('trap_exceptions', 0)} trap-exc, "
             f"{latest_p1.get('terminal_traps', 0)} term"
         )
     pnr = "-"

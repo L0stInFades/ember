@@ -102,10 +102,16 @@ regression:
   the final pass-store boundary. The `mprv` test explicitly sets
   `menvcfgh.ADUE`, matching the other Sv32 permission tests and Spike/Svadu's
   hardware A/D update mode.
+- For non-terminal DUT `TRAP` rows, `tools/spike_trace_prefix.py` now asks Spike
+  for execution logs and compares the corresponding Spike exception `pc`,
+  `cause`, `tval`, and `instr` when Spike reports the faulting instruction. This
+  covers the ordinary page-fault/ecall/permission-fault rows separately from the
+  existing terminal-trap comparison.
 - The metrics/dashboard layer now retains this external P1 evidence: `p1`
   profile summaries include external test count, compared retired rows, Spike
-  commit count, and terminal-trap coverage, and evidence-health requires at least
-  one retained P1 external run with 17 tests and one terminal trap.
+  commit count, non-terminal trap-exception checks, and terminal-trap coverage,
+  and evidence-health requires at least one retained P1 external run with 17
+  tests, 23 ordinary trap-exception checks, and one terminal trap.
 - This is a Spike prefix gate, not full RVVI. RISCOF DUT/reference plugins,
   complete Spike comparison after the final `mmu`/`utrap` `ecall` trap and after
   terminal misaligned exceptions, device-complete comparison, and full Spike/RVVI
@@ -1017,6 +1023,15 @@ updates, 25 privilege switches, and 48/48 floor checks; and
 all 17 external tests, 70,670 compared retired rows, 24 compared trap rows,
 85,628 Spike commits, and 1 terminal-trap comparison. That moves the complete
 directed-test external Spike prefix gate from local-only evidence into hosted CI.
+The follow-up local P1 run
+`logs/ci-p1-20260629-trap-exceptions` passes the same 17-test external gate with
+23 non-terminal Spike exception checks added to the prefix comparison. Its
+summary reports 70,670 compared retired rows, 24 compared trap rows, 23
+`trap_exceptions`, 85,628 Spike commits, and 1 terminal-trap comparison.
+`logs/ci-evidence-health-20260629-trap-exceptions` then passes with 43/43 checks
+under the new default 23-trap-exception floor, and
+`python3 tools/check_ci_dashboard.py --min-p1-external-trap-exceptions 24`
+fails as intended against the retained value of 23.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -1032,14 +1047,14 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 54 summaries scanned, 54 retained history runs, a 2-run pass streak,
-profile counts of `evidence-health=16`, `p0-evidence=1`, `p1=7`,
-`p1-trace-audit=16`, and `quick=14`, 7 P1 external evidence runs, 16 RVTRACE
-coverage artifact runs, 16 CI evidence health runs, latest P0 Linux evidence from
+reports 59 summaries scanned, 59 retained history runs, a 7-run pass streak,
+profile counts of `evidence-health=17`, `p0-evidence=1`, `p1=9`,
+`p1-trace-audit=17`, and `quick=15`, 9 P1 external evidence runs, 17 RVTRACE
+coverage artifact runs, 17 CI evidence health runs, latest P0 Linux evidence from
 `logs/ci-p0-evidence-20260628-233213`, latest P1 external evidence from
-`logs/ci-p1-20260629-p1-external-mprv-v2`, latest hosted RVTRACE audit/coverage from
+`logs/ci-p1-20260629-trap-exceptions`, latest hosted RVTRACE audit/coverage from
 `logs/github-p1-trace-audit-28334435648`, latest CI evidence health from
-`logs/ci-evidence-health-20260629-p1-external-mprv-v2`, and best PnR at **53.94 MHz**
+`logs/ci-evidence-health-20260629-trap-exceptions`, and best PnR at **53.94 MHz**
 for the 40 MHz target. The latest coverage table shows 48/48 floor checks passing:
 `isa`/`amotest` plus `amo_mmu` cover the 6 AMOs, `mmu` covers the original PTE
 update and 3 traps,

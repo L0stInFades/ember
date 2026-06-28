@@ -348,6 +348,14 @@ updates, 25 privilege switches, and 48/48 floor checks, plus the hosted
 `P1 external Spike gate` summary with all 17 external tests, 70,670 compared
 retired rows, 24 compared trap rows, 85,628 Spike commits, and 1 terminal-trap
 comparison.
+The external Spike prefix gate now also compares non-terminal DUT `TRAP` rows
+against Spike's logged exception `pc`/`cause`/`tval` and `instr` when Spike
+reports the faulting instruction. The fresh local `logs/ci-p1-20260629-trap-exceptions`
+run passes with the same 17 external tests, 70,670 compared retired rows, 24
+compared trap rows, 23 ordinary trap-exception checks, 85,628 Spike commits, and
+1 terminal-trap comparison. `logs/ci-evidence-health-20260629-trap-exceptions`
+passes 43/43 checks under the new default 23-trap-exception floor; a negative
+`--min-p1-external-trap-exceptions 24` check fails as expected.
 
 ---
 

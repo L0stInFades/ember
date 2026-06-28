@@ -75,12 +75,14 @@ def parse_log(path):
         if match and current_spike_test:
             rest = match.group("rest")
             stopped_before = re.search(r"stopped_before=(0x[0-9a-fA-F]+)", rest)
+            trap_exceptions = re.search(r"trap_exceptions=(\d+)", rest)
             spike_entries.append(
                 {
                     "test": current_spike_test,
                     "rows": int(match.group("rows")),
                     "ret": int(match.group("ret")),
                     "traps": int(match.group("trap")),
+                    "trap_exceptions": int(trap_exceptions.group(1)) if trap_exceptions else 0,
                     "spike_commits": int(match.group("spike_commits")),
                     "first_pc": match.group("first_pc"),
                     "last_pc": match.group("last_pc"),
@@ -99,6 +101,7 @@ def parse_log(path):
                     "rows": sum(item["rows"] for item in spike_entries),
                     "ret": sum(item["ret"] for item in spike_entries),
                     "traps": sum(item["traps"] for item in spike_entries),
+                    "trap_exceptions": sum(item["trap_exceptions"] for item in spike_entries),
                     "spike_commits": sum(item["spike_commits"] for item in spike_entries),
                     "terminal_traps": sum(1 for item in spike_entries if item["terminal_trap"]),
                     "tests": spike_entries,
@@ -253,7 +256,8 @@ def main():
         for item in summary["p1_external"]:
             lines.append(
                 "- status={status} tests={test_count} ret={ret} traps={traps} "
-                "spike_commits={spike_commits} terminal_traps={terminal_traps} source=`{source}`".format(**item)
+                "trap_exceptions={trap_exceptions} spike_commits={spike_commits} "
+                "terminal_traps={terminal_traps} source=`{source}`".format(**item)
             )
     if summary["rvtrace_audits"]:
         lines += ["", "## RVTRACE"]

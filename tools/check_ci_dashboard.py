@@ -101,6 +101,7 @@ def main():
     ap.add_argument("--min-p0-linux-runs", type=int, default=1)
     ap.add_argument("--min-p1-external-runs", type=int, default=1)
     ap.add_argument("--min-p1-external-tests", type=int, default=17)
+    ap.add_argument("--min-p1-external-trap-exceptions", type=int, default=23)
     ap.add_argument("--min-p1-external-terminal-traps", type=int, default=1)
     ap.add_argument("--min-rvtrace-runs", type=int, default=1)
     ap.add_argument("--min-rvtrace-coverage-runs", type=int, default=1)
@@ -217,6 +218,13 @@ def main():
                 "P1 external tests",
                 int(latest_p1.get("test_count", 0)),
                 args.min_p1_external_tests,
+                evidence=p1_source,
+            )
+            check_min(
+                checks,
+                "P1 external trap exceptions",
+                int(latest_p1.get("trap_exceptions", 0)),
+                args.min_p1_external_trap_exceptions,
                 evidence=p1_source,
             )
             check_min(

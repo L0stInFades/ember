@@ -113,6 +113,7 @@ PY
       --mem 0x80000000:0x400000 \
       --isa RV32IMA_Svadu \
       --instructions 20000 \
+      --check-trap-exceptions \
       --stop-before-pc "$stop_pc"
   fi
 
@@ -152,6 +153,7 @@ PY
       --spike spike \
       --spike-log "$LOGDIR/spike_${t}.log" \
       --base 0x80000000 \
+      --check-trap-exceptions \
       --stop-before-pc "$stop_pc"
   fi
 
@@ -208,6 +210,7 @@ PY
         --mem 0x80000000:0x400000 \
         --isa RV32IMA_Svadu \
         --instructions 40000 \
+        --check-trap-exceptions \
         --stop-before-pc "$stop_pc"
     done
   fi
