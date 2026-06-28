@@ -148,18 +148,26 @@ Asia/Shanghai, and `tools/ci_cron.sh` provides a locked local cron/launchd wrapp
 `tools/ci_cron.sh p1-trace-audit`, `./verify_ci.sh evidence-health`, and a fresh
 `./verify_ci.sh quick` all pass locally. After moving the work into the actual
 GitHub worktree at `/Users/Apple/ember`, the source-only quick profile also passes
-there with `logs/ci-quick-20260629-005240`; the retained RVTRACE audit/coverage
-passes in `logs/ci-p1-trace-audit-20260629-005437`; and the local retained
-evidence-health gate passes in `logs/ci-evidence-health-20260629-005600` with
-36/36 checks passing. The migration fixed reproducibility issues that had been
-hidden by local generated artifacts: `run_rvtests.sh` now locates LLVM tools,
-rebuilds `soc_rt` with `SIM_INIT`, and uses checked-in `rvtests/` plus `link.ld`;
+there with `logs/ci-quick-20260629-010333`; the retained RVTRACE audit/coverage
+passes in `logs/ci-p1-trace-audit-20260629-010528`; and the local retained
+evidence-health gate passes in `logs/ci-evidence-health-20260629-010541` with
+36/36 checks passing. The first hosted macOS GitHub quick CI is now green too:
+run `28329653376` on commit `2216509` completed `quick regression` successfully,
+with artifact summary `logs/github-quick-28329653376` reporting quick `pass=6
+fail=0`. The downloaded hosted RVTRACE artifact was re-audited locally and matches
+the retained coverage baseline: 11 tests, 39,918 retired instructions, 12 traps,
+5 AMOs, 5 PTE updates, and 15 privilege switches. The migration fixed
+reproducibility issues that had been hidden by local generated artifacts:
+`run_rvtests.sh` now locates LLVM tools, rebuilds `soc_rt` with `SIM_INIT`, and
+uses checked-in `rvtests/` plus `link.ld`; `tests/build_run.sh` compiles objects
+and invokes `ld.lld` directly instead of relying on macOS clang's
+`-fuse-ld=lld`; the hosted workflow installs Homebrew's split-out `lld` formula;
 the synth-shell memfile fixture is checked in; `build_vtop.sh` falls back to
 `sim/sim_main.cpp`; and optional `oss-cad-suite` loading no longer fails when the
 directory is absent. Negative
 checks for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`, `mxr:retired=6000`,
-`upage:retired=10000`, `ifault:retired=10000`, and `--min-rvtrace-tests 12` fail as expected. The remaining P0/P1 work is observing the first real hosted/self-hosted
-scheduled green runs, broader coverage beyond directed trace/ref-model tests,
+`upage:retired=10000`, `ifault:retired=10000`, and `--min-rvtrace-tests 12` fail as expected. The remaining P0/P1 work is observing the first real self-hosted
+scheduled/nightly green run, broader coverage beyond directed trace/ref-model tests,
 populating the retained trend history from real remote CI/cron runs, and default
 integration. The behavioral single-cycle path is no longer the only login path, but
 it remains the historical simulation model; this is still far from the RVA23-class,

@@ -775,10 +775,15 @@ and `tests/ifault.c` covers that path: S-mode jumps to a supervisor-readable but
 non-executable page, the delegated S handler records `scause=12`, `stval=sepc`,
 returns to the `jalr` continuation, and confirms the faulting PTE did not receive
 A/D updates. A fresh quick profile passed in
-`logs/ci-quick-20260629-005240` from the GitHub worktree, and the retained
+`logs/ci-quick-20260629-010333` from the GitHub worktree, and the retained
 `verify_ci.sh p1-trace-audit` profile over that logdir passed in
-`logs/ci-p1-trace-audit-20260629-005437` across 11 tests with 39,918 retired
+`logs/ci-p1-trace-audit-20260629-010528` across 11 tests with 39,918 retired
 instructions, 12 traps, 5 AMOs, 5 PTE updates, and 15 privilege switches.
+Hosted macOS GitHub Actions quick CI also passed on run `28329653376` for commit
+`2216509`: artifact summary `logs/github-quick-28329653376` reports quick
+`pass=6 fail=0`, and re-auditing the downloaded hosted RVTRACE CSVs locally gives
+the same 11-test / 39,918-retired / 12-trap / 5-AMO / 5-PTE-update /
+15-privilege-switch baseline.
 `tools/collect_ci_metrics.py` now turns any `verify_ci.sh` log directory into
 machine-readable `summary.json` and human-readable `summary.md`, collecting CI
 pass/fail, `verify.sh` pass/fail, retained RVTRACE coverage, CI evidence health,
@@ -797,7 +802,7 @@ dashboard/history files, a passing streak, retained P0 Linux login evidence, ret
 PnR evidence at or above the 40 MHz target, retained RVTRACE coverage for 11 tests
 with at least 39,000 retired instructions, 12 traps, 5 AMOs, 5 PTE updates,
 15 privilege switches, and 27 passing per-test floor checks. The
-`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-005600`, writing
+`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-010541`, writing
 `ci_health.json` / `ci_health.md` with 36/36 checks passing; negative checks also
 failed as intended for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`,
 `mxr:retired=6000`, `upage:retired=10000`, `ifault:retired=10000`, and
@@ -840,17 +845,20 @@ also exposes `evidence-health` as a manual profile, and `tools/ci_cron.sh` provi
 the same locked, timestamped entry for local cron/launchd.
 `tools/ci_cron.sh p0-audit` passed in `logs/cron/p0-audit-20260628-230808`, and a
 fresh `./verify_ci.sh quick` passed with `pass=1 fail=0` in
-`logs/ci-quick-20260629-005240`. The same cron wrapper also passed the combined
+`logs/ci-quick-20260629-010333`. The same cron wrapper also passed the combined
 retained evidence profile in `logs/cron/p0-evidence-20260628-231323`. The
 hosted/self-hosted workflow files have been syntax-parsed locally; `actionlint` is
-not installed in this environment, and the first remote runner executions are still pending.
+not installed in this environment. The hosted macOS quick workflow has now passed
+remotely; the first self-hosted scheduled/nightly runner execution is still pending.
 The GitHub worktree migration also removed several hidden local-artifact
 dependencies: `run_rvtests.sh` now locates LLVM tools and rebuilds `soc_rt` from
-source with `SIM_INIT`, `rvtests/` plus `link.ld` are present as source inputs, the
-small synth-shell memfile fixture is checked in despite the general `*.hex` ignore,
-`build_vtop.sh` can use the structured `sim/sim_main.cpp` harness, and missing
-`oss-cad-suite/` no longer causes empty-log shell exits when system tools are on
-`PATH`.
+source with `SIM_INIT`, `tests/build_run.sh` compiles objects and invokes
+`ld.lld` directly instead of relying on macOS clang's `-fuse-ld=lld`, the hosted
+workflow installs Homebrew's split-out `lld` formula, `rvtests/` plus `link.ld`
+are present as source inputs, the small synth-shell memfile fixture is checked in
+despite the general `*.hex` ignore, `build_vtop.sh` can use the structured
+`sim/sim_main.cpp` harness, and missing `oss-cad-suite/` no longer causes
+empty-log shell exits when system tools are on `PATH`.
 
 `syn_top_rvlinux_synth_shell.v` wraps the same top-level shell behind 74 package IOs
 for place-and-route without trimming the core, cache, PTW, MMIO, or debug-output
@@ -913,7 +921,7 @@ Synthesis/PnR evidence:
 
 ## How to reproduce
 - Full current regression: `bash verify.sh` (latest local run:
-  `logs/ci-quick-20260629-005240/quick`, `pass=6 fail=0`)
+  `logs/ci-quick-20260629-010333/quick`, `pass=6 fail=0`)
 - External P1 tool + Spike prefix gate: `tools/setup_riscof_env.sh` then `./verify_p1_external.sh`
 - Directed tests: `for t in isa amotest mmu ctest shtest mtest utrap mprv mxr upage ifault; do bash tests/build_run.sh $t; done`
 - Boot to shell: `bash build_vtop.sh linux-build/fw_payload_sf.hex && bash run_shell.sh`
