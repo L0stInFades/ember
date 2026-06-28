@@ -515,6 +515,12 @@ top-level JSON, and history trend JSON. Local
 55-check health gate; a shortened `--require-p1-external-tests` list now fails in
 all three places, proving the retained dashboard/history cannot silently drop the
 `amo_mmu` test either.
+The pushed source commit `fe7b580` passed hosted macOS CI as run `28339355694`:
+quick `pass=1 fail=0`, and hosted P1 external
+`logs/github-p1-external-28339355694` records the same exact 17-test list in
+`summary.json`, `ci-dashboard.json`, `ci-dashboard.md`, and `ci-trend.md`, with
+`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`, and 106/106 ACT/Spike
+tests across the expected 12 groups.
 
 ---
 

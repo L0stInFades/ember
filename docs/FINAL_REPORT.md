@@ -1198,6 +1198,12 @@ latest summary, dashboard top-level JSON, and history trend JSON. Local
 `logs/ci-evidence-health-20260629-p1-dashboard-tests` passes 55/55 checks; a
 shortened `--require-p1-external-tests` list fails in all three P1 test-list
 checks.
+Source commit `fe7b580` then passed hosted macOS CI as run `28339355694`:
+quick `pass=1 fail=0`, and `logs/github-p1-external-28339355694` records the
+same exact 17-test list in `summary.json`, `ci-dashboard.json`,
+`ci-dashboard.md`, and `ci-trend.md`, with `ret=70670`,
+`trap_exceptions=23`, `terminal_traps=1`, and 106/106 ACT/Spike tests across
+the expected 12 groups.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
