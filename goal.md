@@ -501,6 +501,12 @@ Spike-prefix test-name list, not just the 17-test count:
 `logs/ci-evidence-health-20260629-p1-test-list` passes the refreshed 53-check
 health gate; an intentionally shortened `--require-p1-external-tests` list fails
 against the retained CSV, proving the gate catches silent P1 test-set shrinkage.
+The pushed source commit `d1acc71` passed hosted macOS CI as run `28339094468`:
+quick `pass=1 fail=0`, and hosted P1 external
+`logs/github-p1-external-28339094468` records the exact 17-test Spike-prefix list
+(`isa,amotest,ctest,shtest,mtest,mmu,utrap,misalign,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`)
+with `ret=70670`, `trap_exceptions=23`, and `terminal_traps=1`, plus 106/106
+ACT/Spike tests with `group_count=12` and the expected group CSV.
 
 ---
 
