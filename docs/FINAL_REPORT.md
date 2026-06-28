@@ -760,6 +760,7 @@ write-permission-fault plus A/D side-effect coverage must remain in `wpfault`,
 S-mode SUM user-page permission coverage must remain in `sum`,
 reserved invalid-PTE encoding coverage must remain in `badpte`,
 misaligned level-1 Sv32 superpage coverage must remain in `superpage`,
+Sv32 LR/SC/AMO permission and A/D coverage must remain in `amo_mmu`,
 and every directed trace must keep a minimum
 retired-instruction floor. `tests/mprv.c` lifts the existing
 MPRV/SUM data-privilege smoke into the default directed/trace/reftrace baseline:
@@ -799,6 +800,12 @@ backing physical return instruction remains unchanged. The combinational
 now all reject that misaligned-superpage encoding. `tools/check_rvtrace.py` also
 skips image-base instruction lookup for cause-12 fetch-fault rows, leaving exact
 fetch-fault semantics to the reference trace checker.
+`tests/amo_mmu.c` adds LR/SC/AMO coverage under Sv32: LR from a read-only
+supervisor page succeeds and sets only A, SC to that page delegates a store/AMO
+page fault without setting D or changing memory, then S-mode makes the PTE writable
+and proves successful SC plus AMOADD set D and update the mapped word. This keeps
+the default trace set from treating bare-mode atomics as enough A-extension
+coverage.
 A fresh quick profile passed in
 `logs/ci-quick-20260629-010333` from the GitHub worktree, and the retained
 `verify_ci.sh p1-trace-audit` profile over that logdir passed in
@@ -835,6 +842,14 @@ The retained `verify_ci.sh p1-trace-audit` profile over those traces passed in
 `logs/ci-p1-trace-audit-20260629-superpage-v2` across 15 tests with 65,270 retired
 instructions, 23 traps, 5 AMOs, 9 PTE updates, 23 privilege switches, and 41/41
 coverage-floor checks.
+For the current `amo_mmu` increment, the local directed, rvtests, trace, reftrace,
+and cache/stage portions of `quick` passed in
+`logs/ci-quick-20260629-amo-mmu/quick`; full local `quick` stopped only at
+`vtop_synth` because this machine does not have `verilator` or `oss-cad-suite`.
+The retained `verify_ci.sh p1-trace-audit` profile over those traces passed in
+`logs/ci-p1-trace-audit-20260629-amo-mmu` across 16 tests with 71,237 retired
+instructions, 25 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and 46/46
+coverage-floor checks.
 Hosted macOS GitHub Actions now runs both quick and the retained RVTRACE coverage
 audit. Run `28331372587` for commit `8682f10` passed `quick regression`; artifact
 summary `logs/github-quick-28331372587` reports quick `pass=1 fail=0`, and
@@ -856,15 +871,15 @@ latest CI evidence health, latest per-test RVTRACE coverage/floor-check status, 
 PnR Fmax range across runs. `tools/check_ci_dashboard.py` turns those retained
 artifacts into a cheap evidence-health gate: by default it requires parse-clean
 dashboard/history files, a passing streak, retained P0 Linux login evidence, retained
-PnR evidence at or above the 40 MHz target, retained RVTRACE coverage for 15 tests
-with at least 60,000 retired instructions, 23 traps, 5 AMOs, 9 PTE updates,
-23 privilege switches, and 41 passing per-test floor checks. The
-`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-superpage-v2`, writing
+PnR evidence at or above the 40 MHz target, retained RVTRACE coverage for 16 tests
+with at least 70,000 retired instructions, 25 traps, 6 AMOs, 12 PTE updates,
+25 privilege switches, and 46 passing per-test floor checks. The
+`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-amo-mmu`, writing
 `ci_health.json` / `ci_health.md` with 36/36 checks passing; negative checks also
 failed as intended for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`,
 `mxr:retired=6000`, `upage:retired=10000`, `ifault:retired=10000`, and
 `wpfault:pte_updates=3`, `sum:pte_updates=3`, `badpte:traps=4`,
-`superpage:traps=4`, plus `--min-rvtrace-tests 16`.
+`superpage:traps=4`, `amo_mmu:pte_updates=4`, plus `--min-rvtrace-tests 17`.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -880,15 +895,16 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 23 summaries scanned, 23 retained history runs, a 4-run pass streak,
-profile counts of `evidence-health=7`, `p0-evidence=1`, `p1-trace-audit=9`, and
-`quick=6`, 9 RVTRACE coverage artifact runs, 7 CI evidence
+reports 26 summaries scanned, 26 retained history runs, a 2-run pass streak,
+profile counts of `evidence-health=8`, `p0-evidence=1`, `p1-trace-audit=10`, and
+`quick=7`, 10 RVTRACE coverage artifact runs, 8 CI evidence
 health runs, latest P0 Linux evidence from
 `logs/ci-p0-evidence-20260628-233213`, latest RVTRACE audit/coverage from
-`logs/ci-p1-trace-audit-20260629-superpage-v2`, latest CI evidence health from
-`logs/ci-evidence-health-20260629-superpage-v2`, and best PnR at **53.94 MHz** for the
-40 MHz target. The latest coverage table shows 41/41 floor checks passing:
-`isa`/`amotest` cover the 5 AMOs, `mmu` covers the original PTE update and 3 traps,
+`logs/ci-p1-trace-audit-20260629-amo-mmu`, latest CI evidence health from
+`logs/ci-evidence-health-20260629-amo-mmu`, and best PnR at **53.94 MHz** for the
+40 MHz target. The latest coverage table shows 46/46 floor checks passing:
+`isa`/`amotest` plus `amo_mmu` cover the 6 AMOs, `mmu` covers the original PTE
+update and 3 traps,
 `utrap` covers the user trap plus 3 privilege switches, and `mprv` contributes
 5,452 retired instructions, 1 load page fault, and 1 additional PTE A-bit update;
 `mxr` contributes 5,501 retired instructions, 2 traps, 2 privilege switches, and
@@ -903,7 +919,10 @@ leave A/D clear; `badpte` contributes 9,952 retired instructions, 3 traps, 2
 privilege switches, and 0 PTE A/D updates while proving the reserved `R=0/W=1`
 encoding faults for store and fetch; `superpage` contributes 3,924 retired
 instructions, 3 traps, 2 privilege switches, and 0 PTE A/D updates while proving a
-level-1 leaf with nonzero PPN0 faults for store and fetch.
+level-1 leaf with nonzero PPN0 faults for store and fetch; `amo_mmu` contributes
+5,967 retired instructions, 2 traps, 2 privilege switches, 1 AMO, and 3 PTE A/D
+updates while proving LR sets A only, a read-only SC faults without D, and
+successful SC/AMOADD set D.
 The scheduling layer is now wired for automation: `.github/workflows/ci.yml` runs
 the hosted macOS quick profile on push/PR/manual dispatch, `.github/workflows/nightly.yml`
 runs the longer profile on a self-hosted macOS runner at 01:00 Asia/Shanghai and

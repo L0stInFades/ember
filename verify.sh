@@ -30,7 +30,7 @@ run_step() {
 
 run_step directed bash -lc '
   set -euo pipefail
-  for t in isa amotest mmu ctest shtest mtest utrap mprv mxr upage ifault wpfault sum badpte superpage; do
+  for t in isa amotest mmu ctest shtest mtest utrap mprv mxr upage ifault wpfault sum badpte superpage amo_mmu; do
     echo "=== $t ==="
     LOG=/tmp/tb_${t}.log bash tests/build_run.sh "$t"
   done
@@ -40,7 +40,7 @@ run_step rvtests bash run_rvtests.sh
 
 run_step trace bash -lc '
   set -euo pipefail
-  for t in isa amotest mmu ctest shtest mtest utrap mprv mxr upage ifault wpfault sum badpte superpage; do
+  for t in isa amotest mmu ctest shtest mtest utrap mprv mxr upage ifault wpfault sum badpte superpage amo_mmu; do
     echo "=== trace $t ==="
     rm -f rvtrace.log "$LOGDIR/rvtrace_${t}.csv"
     LOG=/tmp/tb_trace_${t}.log EXTRA_IVERILOG_FLAGS="-D RVTRACE" bash tests/build_run.sh "$t"
@@ -48,7 +48,7 @@ run_step trace bash -lc '
     mv rvtrace.log "$LOGDIR/rvtrace_${t}.csv"
     trap_arg="--no-trap"
     case "$t" in
-      mmu|utrap|mprv|mxr|upage|ifault|wpfault|sum|badpte|superpage) trap_arg="" ;;
+      mmu|utrap|mprv|mxr|upage|ifault|wpfault|sum|badpte|superpage|amo_mmu) trap_arg="" ;;
     esac
     python3 tools/check_rvtrace.py \
       --trace "$LOGDIR/rvtrace_${t}.csv" \
@@ -61,11 +61,11 @@ run_step trace bash -lc '
 
 run_step reftrace bash -lc '
   set -euo pipefail
-  for t in isa amotest mmu ctest shtest mtest utrap mprv mxr upage ifault wpfault sum badpte superpage; do
+  for t in isa amotest mmu ctest shtest mtest utrap mprv mxr upage ifault wpfault sum badpte superpage amo_mmu; do
     echo "=== reftrace $t ==="
     priv_arg="--expect-priv 3"
     case "$t" in
-      mmu|utrap|mprv|mxr|upage|ifault|wpfault|sum|badpte|superpage) priv_arg="" ;;
+      mmu|utrap|mprv|mxr|upage|ifault|wpfault|sum|badpte|superpage|amo_mmu) priv_arg="" ;;
     esac
     python3 tools/rvtrace_ref.py \
       --trace "$LOGDIR/rvtrace_${t}.csv" \
