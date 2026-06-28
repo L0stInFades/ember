@@ -204,11 +204,11 @@ instructions, 23 traps, 5 AMOs, 9 PTE updates, 23 privilege switches, and 41/41
 floor checks; the local retained evidence-health gate passes in
 `logs/ci-evidence-health-20260629-superpage-v2` with 36/36 checks. The hosted macOS
 GitHub quick CI now runs both quick and
-retained RVTRACE coverage audit: run `28330936655` on commit `b302fd6` completed
-`quick regression` successfully, with `logs/github-quick-28330936655` reporting
-quick `pass=1 fail=0` and `logs/github-p1-trace-audit-28330936655` reporting
-RVTRACE coverage for 14 tests, 61,346 retired instructions, 20 traps, 5 AMOs,
-9 PTE updates, 21 privilege switches, and 38/38 floor checks passing. The
+retained RVTRACE coverage audit: run `28331372587` on commit `8682f10` completed
+`quick regression` successfully, with `logs/github-quick-28331372587` reporting
+quick `pass=1 fail=0` and `logs/github-p1-trace-audit-28331372587` reporting
+RVTRACE coverage for 15 tests, 65,270 retired instructions, 23 traps, 5 AMOs,
+9 PTE updates, 23 privilege switches, and 41/41 floor checks passing. The
 migration fixed
 reproducibility issues that had been hidden by local generated artifacts:
 `run_rvtests.sh` now locates LLVM tools, rebuilds `soc_rt` with `SIM_INIT`, and
