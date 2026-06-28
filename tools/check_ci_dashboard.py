@@ -101,6 +101,7 @@ def main():
     ap.add_argument("--min-p0-linux-runs", type=int, default=1)
     ap.add_argument("--min-p1-external-runs", type=int, default=1)
     ap.add_argument("--min-p1-external-tests", type=int, default=17)
+    ap.add_argument("--min-p1-act4-spike-tests", type=int, default=6)
     ap.add_argument("--min-p1-external-trap-exceptions", type=int, default=23)
     ap.add_argument("--min-p1-external-terminal-traps", type=int, default=1)
     ap.add_argument("--min-rvtrace-runs", type=int, default=1)
@@ -204,6 +205,7 @@ def main():
         add_check(checks, "latest P1 external evidence exists", bool(p1_logdir), f"logdir={p1_logdir or 'none'}")
         p1_summary, p1_source = load_summary(dashboard, p1_logdir)
         latest_p1 = latest_item(p1_summary.get("p1_external", [])) if p1_summary else None
+        latest_act4 = latest_item(p1_summary.get("act4_spike", [])) if p1_summary else None
         add_check(checks, "latest P1 external summary", bool(latest_p1), f"source={p1_source or 'none'}", p1_source)
         if latest_p1:
             add_check(
@@ -233,6 +235,35 @@ def main():
                 int(latest_p1.get("terminal_traps", 0)),
                 args.min_p1_external_terminal_traps,
                 evidence=p1_source,
+            )
+        add_check(
+            checks,
+            "latest P1 ACT/Spike summary",
+            bool(latest_act4),
+            f"source={p1_source or 'none'}",
+            p1_source,
+        )
+        if latest_act4:
+            add_check(
+                checks,
+                "latest P1 ACT/Spike smoke passed",
+                latest_act4.get("status") == "pass" and int(latest_act4.get("failed", 0)) == 0,
+                f"status={latest_act4.get('status', 'unknown')} failed={latest_act4.get('failed', 0)}",
+                p1_source,
+            )
+            check_min(
+                checks,
+                "P1 ACT/Spike smoke tests",
+                int(latest_act4.get("tests", 0)),
+                args.min_p1_act4_spike_tests,
+                evidence=p1_source,
+            )
+            add_check(
+                checks,
+                "P1 ACT/Spike smoke all tests passed",
+                int(latest_act4.get("passed", 0)) == int(latest_act4.get("tests", 0)),
+                f"passed={latest_act4.get('passed', 0)} tests={latest_act4.get('tests', 0)}",
+                p1_source,
             )
 
     if not args.no_require_pnr:
@@ -419,6 +450,7 @@ def main():
             "pass_streak": int(history.get("current_pass_streak", 0)),
             "latest_p0_linux": dashboard.get("latest_p0_linux"),
             "latest_p1_external": dashboard.get("latest_p1_external"),
+            "latest_act4_spike": dashboard.get("latest_act4_spike"),
             "latest_rvtrace": dashboard.get("latest_rvtrace"),
             "latest_rvtrace_coverage": dashboard.get("latest_rvtrace_coverage"),
             "best_pnr": dashboard.get("best_pnr"),

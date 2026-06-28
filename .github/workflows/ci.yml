@@ -132,7 +132,7 @@ jobs:
             .p1/riscv-isa-sim
             .p1/riscv-isa-sim-build
             .p1/spike
-          key: p1-external-${{ runner.os }}-${{ runner.arch }}-spike-55b4658-${{ hashFiles('tools/setup_riscof_env.sh', 'tools/setup_spike_env.sh') }}
+          key: p1-external-${{ runner.os }}-${{ runner.arch }}-spike-55b4658-${{ hashFiles('tools/setup_riscof_env.sh', 'tools/setup_spike_env.sh', 'tools/run_act4_spike_smoke.sh', 'tools/p1_tool_audit.py', 'p1/act4/ember-rv32i/**') }}
 
       - name: Setup RISCOF
         run: tools/setup_riscof_env.sh

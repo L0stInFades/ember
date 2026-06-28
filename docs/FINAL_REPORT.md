@@ -66,12 +66,14 @@ ISA and page-table walker. Full transcript: `/tmp/shell_transcript.txt`.
 External P1 verification bring-up has a strict tool gate separate from the default
 regression:
 - `tools/setup_riscof_env.sh` creates `.p1/riscof-venv`, installs RISCOF, and
-  clones `riscv-arch-test` into `.p1/riscv-arch-test`.
+  clones `riscv-arch-test` into `.p1/riscv-arch-test`. It also installs the
+  ACT4 Python framework/testgen/coverage packages into the same venv.
 - `tools/setup_spike_env.sh` clones/builds `riscv-isa-sim` into `.p1/` and
   installs Spike under `.p1/spike` for the external prefix gate.
 - `verify_p1_external.sh` checks the host/RISCOF/difftest/DUT-simulation
-  toolchain (`riscof`, RISC-V GCC/binutils, LLVM/iverilog/vvp, and `spike`) and
-  automatically searches local `.p1/spike/bin` when present.
+  toolchain (`riscof`, ACT4 Python CLIs, RISC-V GCC/binutils,
+  LLVM/iverilog/vvp, and `spike`) and automatically searches local `.p1/spike/bin`
+  when present.
 - Current local audit passes with RISCOF 1.25.3, Homebrew `riscv64-elf-gcc`
   16.1.0/binutils 2.46.1, and a locally built Spike 1.1.1-dev from
   `riscv-isa-sim` commit `55b4658dbf574ba0b714083ec436ce2cb5be1998` under
@@ -107,12 +109,22 @@ regression:
   `cause`, `tval`, and `instr` when Spike reports the faulting instruction. This
   covers the ordinary page-fault/ecall/permission-fault rows separately from the
   existing terminal-trap comparison.
+- Because RISCOF 1.25.3 does not discover the current ACT4
+  `START_TEST_CONFIG`/`MARCH` test metadata, the repo now adds a narrower
+  ACT/Spike smoke gate instead of claiming full ACT4 certification. The smoke
+  uses `p1/act4/ember-rv32i/` DUT macros/linker support, compiles upstream ACT4
+  RV32I tests, generates expected signatures with Spike, recompiles in
+  `RVTEST_SELFCHECK` mode, and runs the ELFs on the Ember RTL testbench.
+  The default set is `I-add`, `I-addi`, `I-lw`, `I-sw`, `I-beq`, and `I-jalr`.
 - The metrics/dashboard layer now retains this external P1 evidence: `p1`
   profile summaries include external test count, compared retired rows, Spike
   commit count, non-terminal trap-exception checks, and terminal-trap coverage,
-  and evidence-health requires at least one retained P1 external run with 17
-  tests, 23 ordinary trap-exception checks, and one terminal trap.
-- This is a Spike prefix gate, not full RVVI. RISCOF DUT/reference plugins,
+  plus the ACT/Spike smoke pass count. Evidence-health requires at least one
+  retained P1 external run with 17 tests, 23 ordinary trap-exception checks, one
+  terminal trap, and 6 ACT/Spike smoke tests.
+- This is a Spike prefix plus ACT/Spike smoke gate, not full RVVI or full ACT4
+  certification. Full ACT4/UDB remains future work; the local system Ruby is
+  still 2.6 while upstream UDB wants Ruby 3.2+. RISCOF/ACT4 DUT/reference plugins,
   complete Spike comparison after the final `mmu`/`utrap` `ecall` trap and after
   terminal misaligned exceptions, device-complete comparison, and full Spike/RVVI
   lockstep over all directed tests are still the next implementation step. The
@@ -1040,6 +1052,13 @@ switches, and 48/48 floor checks; and `logs/github-p1-external-28334858340`
 reports all 17 external tests, 70,670 compared retired rows, 24 compared trap
 rows, 23 non-terminal trap-exception checks, 85,628 Spike commits, and 1
 terminal-trap comparison.
+The local ACT/Spike smoke was then added to the same P1 external profile:
+`logs/ci-p1-20260629-act4-spike` reports the existing 17-test Spike-prefix gate
+plus 6/6 ACT/Spike smoke tests generated from upstream ACT4 RV32I sources. The
+follow-up `logs/ci-evidence-health-20260629-act4-spike` run passed 47/47 checks
+under the new retained-evidence floor, and
+`python3 tools/check_ci_dashboard.py --min-p1-act4-spike-tests 7` fails as
+intended against the retained 6-test smoke result.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -1174,7 +1193,7 @@ Synthesis/PnR evidence:
 ## How to reproduce
 - Full current regression: `bash verify.sh` (latest local run:
   `logs/ci-quick-20260629-010333/quick`, `pass=6 fail=0`)
-- External P1 tool + Spike prefix gate: `tools/setup_riscof_env.sh`, `tools/setup_spike_env.sh`, then `./verify_p1_external.sh`
+- External P1 tool + Spike prefix + ACT/Spike smoke gate: `tools/setup_riscof_env.sh`, `tools/setup_spike_env.sh`, then `./verify_p1_external.sh`
 - Directed tests: `for t in isa amotest mmu ctest shtest mtest utrap mprv mxr upage ifault; do bash tests/build_run.sh $t; done`
 - Boot to shell: `bash build_vtop.sh linux-build/fw_payload_sf.hex && bash run_shell.sh`
 - Verilator synth-shell smoke: `SYNTH_SHELL=1 MEMWORDS=4096 MEMFILE_WORDS=10 OBJ_DIR=obj_vtop_verify_synth bash build_vtop.sh tb_rvlinux_synth_shell_memfile.hex && ./obj_vtop_verify_synth/Vvtop --maxcyc=20000`
@@ -1193,7 +1212,7 @@ Synthesis/PnR evidence:
 - Standard synth-shell no-net boot-to-login run: `./run_synth_shell_nonet.sh` (add `--prepare-payload` if `linux-build/fw_payload_sf_nonet.bin` is missing; add `--no-build` to reuse an existing `obj_vtop_synth_linux_sf_tb400m_nonet/Vvtop`)
 - Explicit P0 Linux gate: `./verify_p0_linux.sh` for the full expensive boot-to-login run, `./verify_p0_linux.sh --smoke --reuse` for a quick OpenSBI harness/payload smoke, or `./verify_p0_linux.sh --check-logs=logs/run-synth-shell-nonet-default-login` to audit the retained full-run logs.
 - Profiled CI/nightly scheduler: `./verify_ci.sh quick` for the normal regression, `./verify_ci.sh pr` for quick plus P0 smoke, `P0_SMOKE_REUSE=1 ./verify_ci.sh p0-smoke` for a reused fast P0 Linux smoke, `./verify_ci.sh p0-audit` to audit retained login logs, `./verify_ci.sh p0-pnr-audit` to audit retained current PnR evidence, `./verify_ci.sh p0-evidence` to audit retained Linux+PnR evidence together, `./verify_ci.sh p1-trace-audit` to audit retained RVTRACE/ref-model evidence and write `rvtrace_coverage.json` / `rvtrace_coverage.md`, `./verify_ci.sh evidence-health` to check retained dashboard/history evidence and write `ci_health.json` / `ci_health.md`, `./verify_ci.sh p0-pnr` for current synth-shell top yosys+nextpnr, and `./verify_ci.sh nightly` for quick + P1 + P1 trace audit + P0 smoke + P0 PnR + full P0 Linux. Every profile now writes `summary.json` and `summary.md` under its `LOGDIR` and refreshes `logs/ci-dashboard.json`, `logs/ci-dashboard.md`, `logs/ci-history.jsonl`, and `logs/ci-trend.md`; the dashboard and trend history can also be regenerated manually with `python3 tools/render_ci_dashboard.py --root logs`.
-- Automation wrappers: GitHub hosted quick plus P1 external CI is `.github/workflows/ci.yml`, self-hosted nightly CI is `.github/workflows/nightly.yml`, and local cron/launchd can use `tools/ci_cron.sh nightly` (for example `0 1 * * * cd /Users/Apple/riscv-rv32i-core && tools/ci_cron.sh nightly`), `tools/ci_cron.sh p0-evidence` for low-cost P0 evidence audits, `tools/ci_cron.sh p1-trace-audit` for retained P1 trace audits, or `tools/ci_cron.sh evidence-health` for cheap retained-evidence health checks between expensive runs.
+- Automation wrappers: GitHub hosted quick plus P1 external CI is `.github/workflows/ci.yml`, self-hosted nightly CI is `.github/workflows/nightly.yml`, and local cron/launchd can use `tools/ci_cron.sh nightly` (for example `0 1 * * * cd /Users/Apple/ember && tools/ci_cron.sh nightly`), `tools/ci_cron.sh p0-evidence` for low-cost P0 evidence audits, `tools/ci_cron.sh p1-trace-audit` for retained P1 trace audits, or `tools/ci_cron.sh evidence-health` for cheap retained-evidence health checks between expensive runs.
 - WFI timer regression: `iverilog -g2012 -o /tmp/tb_rvlinux_min_core_wfi_timer cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_wfi_timer.v && vvp /tmp/tb_rvlinux_min_core_wfi_timer`
 - CLINT/CSR time regression: `iverilog -g2012 -o /tmp/tb_rvlinux_min_core_time_csr cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_time_csr.v && vvp /tmp/tb_rvlinux_min_core_time_csr`
 - Side-effect interrupt replay regression: `iverilog -g2012 -o /tmp/tb_rvlinux_min_core_interrupt_side_effect cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_interrupt_side_effect.v && vvp /tmp/tb_rvlinux_min_core_interrupt_side_effect`

@@ -1,0 +1,14 @@
+#ifndef _EMBER_RVTEST_CONFIG_H
+#define _EMBER_RVTEST_CONFIG_H
+
+#define I_SUPPORTED
+#define ZICSR_SUPPORTED
+#define ZIFENCEI_SUPPORTED
+
+#define UDB_MXLEN 32
+#define UDB_MXLEN_32
+#define UDB_VLEN 0
+#define UDB_NUM_PMP_ENTRIES 0
+#define UDB_PMP_GRANULARITY 0
+
+#endif

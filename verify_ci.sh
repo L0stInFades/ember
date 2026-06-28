@@ -18,7 +18,7 @@ Profiles:
   p0-evidence Audit retained P0 Linux login logs plus retained P0 PnR evidence.
   p0-full     Run the full P0 Linux no-net boot-to-login gate.
   p0-pnr      Rerun current RVLINUX_SYNTH_SHELL top yosys+nextpnr at 40 MHz.
-  p1          Run the external P1 tool/Spike-prefix gate.
+  p1          Run the external P1 tool/Spike-prefix plus ACT/Spike smoke gate.
   p1-trace-audit
               Audit retained RVTRACE CSVs through check_rvtrace + rvtrace_ref.
   evidence-health
@@ -40,6 +40,9 @@ Environment:
   P0_PNR_NEXTPNR_LOG      Retained nextpnr log for p0-pnr-audit.
   P0_PNR_CONFIG           Retained nextpnr textcfg for p0-pnr-audit.
   P1_TRACE_LOGDIR         Retained verify.sh/quick logdir with rvtrace_*.csv.
+  P1_ACT4_TESTS           Override ACT/Spike smoke test list.
+  P1_ACT4_MAXCYC          Override ACT/Spike smoke DUT cycle cap.
+  P1_SKIP_ACT4_SPIKE      Set to 1 to skip the ACT/Spike smoke inside P1.
 EOF
 }
 

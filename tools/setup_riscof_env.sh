@@ -21,4 +21,11 @@ if [ ! -d "$ARCH_TEST/.git" ]; then
   git clone --depth 1 https://github.com/riscv-non-isa/riscv-arch-test "$ARCH_TEST"
 fi
 
+if [ -d "$ARCH_TEST/framework" ]; then
+  "$VENV/bin/python" -m pip install --upgrade \
+    -e "$ARCH_TEST/framework" \
+    -e "$ARCH_TEST/generators/testgen" \
+    -e "$ARCH_TEST/generators/coverage"
+fi
+
 PATH="$ROOT/.p1/spike/bin:$PATH" "$VENV/bin/python" "$ROOT/tools/p1_tool_audit.py" --venv "$VENV" --allow-missing

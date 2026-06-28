@@ -44,10 +44,15 @@ else:
 PY
 }
 
-if [ "${P1_SKIP_SPIKE_PREFIX:-0}" != "1" ]; then
-  LOGDIR=${LOGDIR:-logs/p1-external-$(date +%Y%m%d-%H%M%S)}
-  mkdir -p "$LOGDIR"
+LOGDIR=${LOGDIR:-logs/p1-external-$(date +%Y%m%d-%H%M%S)}
+mkdir -p "$LOGDIR"
 
+if [ "${P1_SKIP_ACT4_SPIKE:-0}" != "1" ]; then
+  echo "=== act4-spike smoke ==="
+  LOGDIR="$LOGDIR/act4_spike" bash tools/run_act4_spike_smoke.sh
+fi
+
+if [ "${P1_SKIP_SPIKE_PREFIX:-0}" != "1" ]; then
   tests=${P1_SPIKE_PREFIX_TESTS:-"isa amotest ctest shtest mtest"}
   for t in $tests; do
     echo "=== spike-prefix $t ==="

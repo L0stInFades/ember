@@ -1,7 +1,8 @@
 #!/bin/bash
 # Boot rvlinux to the login prompt, then drive an interactive root shell over
 # the UART RX path (fed through a FIFO) and run a few commands as proof.
-cd /Users/Apple/riscv-rv32i-core
+ROOT=$(cd "$(dirname "$0")" && pwd)
+cd "$ROOT"
 pkill -f Vvtop 2>/dev/null; sleep 1
 rm -f /tmp/rxin; mkfifo /tmp/rxin
 sleep 100000 > /tmp/rxin &        # hold the FIFO open (never EOF)

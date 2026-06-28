@@ -11,13 +11,13 @@ usage: tools/ci_cron.sh [profile]
 
 Default profile is nightly, or VERIFY_PROFILE when set.
 Example crontab line for a 01:00 Asia/Shanghai nightly run:
-  0 1 * * * cd /Users/Apple/riscv-rv32i-core && tools/ci_cron.sh nightly
+  0 1 * * * cd /Users/Apple/ember && tools/ci_cron.sh nightly
 Example low-cost evidence audit between expensive runs:
-  0 */6 * * * cd /Users/Apple/riscv-rv32i-core && tools/ci_cron.sh p0-evidence
+  0 */6 * * * cd /Users/Apple/ember && tools/ci_cron.sh p0-evidence
 Example retained P1 trace audit:
-  30 */6 * * * cd /Users/Apple/riscv-rv32i-core && tools/ci_cron.sh p1-trace-audit
+  30 */6 * * * cd /Users/Apple/ember && tools/ci_cron.sh p1-trace-audit
 Example retained evidence health check:
-  45 */6 * * * cd /Users/Apple/riscv-rv32i-core && tools/ci_cron.sh evidence-health
+  45 */6 * * * cd /Users/Apple/ember && tools/ci_cron.sh evidence-health
 
 Environment:
   CI_LOGROOT     Root for timestamped cron logs (default: logs/cron).

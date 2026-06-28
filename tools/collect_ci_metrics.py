@@ -22,6 +22,10 @@ SPIKE_PREFIX_RE = re.compile(
     r"last_pc=(?P<last_pc>0x[0-9a-fA-F]+)(?P<rest>.*)"
 )
 P1_EXTERNAL_RE = re.compile(r"P1_EXTERNAL: PASS logdir=(?P<logdir>.+)")
+ACT4_SPIKE_RE = re.compile(
+    r"P1_ACT4_SPIKE: (?P<status>PASS|FAIL) tests=(?P<tests>\d+) "
+    r"passed=(?P<passed>\d+) failed=(?P<failed>\d+) logdir=(?P<logdir>.+)"
+)
 FMAX_RE = re.compile(r"Max frequency .*: ([0-9.]+) MHz \(PASS at ([0-9.]+) MHz\)")
 PNR_UTIL_RE = re.compile(r"(DP16KD|TRELLIS_FF|TRELLIS_COMB):\s+(\d+)/\s*(\d+)\s+(\d+)%")
 
@@ -40,6 +44,7 @@ def parse_log(path):
         "ci_summaries": [],
         "verify_summaries": [],
         "p1_external": [],
+        "act4_spike": [],
         "rvtrace_audits": [],
         "p0_linux_pass": False,
         "p0_linux_mode": None,
@@ -67,6 +72,18 @@ def parse_log(path):
     spike_entries = []
     current_spike_test = None
     for line in text.splitlines():
+        match = ACT4_SPIKE_RE.search(line)
+        if match:
+            metrics["act4_spike"].append(
+                {
+                    "status": match.group("status").lower(),
+                    "tests": int(match.group("tests")),
+                    "passed": int(match.group("passed")),
+                    "failed": int(match.group("failed")),
+                    "logdir": match.group("logdir"),
+                }
+            )
+            continue
         header = SPIKE_PREFIX_HEADER_RE.match(line)
         if header:
             current_spike_test = header.group(1)
@@ -180,6 +197,7 @@ def main():
         "ci_summaries": [],
         "verify_summaries": [],
         "p1_external": [],
+        "act4_spike": [],
         "rvtrace_audits": [],
         "rvtrace_coverage": None,
         "ci_health": None,
@@ -189,7 +207,7 @@ def main():
 
     for path in logs:
         item = parse_log(path)
-        for key in ("ci_summaries", "verify_summaries", "p1_external", "rvtrace_audits", "pnr"):
+        for key in ("ci_summaries", "verify_summaries", "p1_external", "act4_spike", "rvtrace_audits", "pnr"):
             for entry in item[key]:
                 entry = dict(entry)
                 entry["source"] = rel(path, logdir)
@@ -225,6 +243,9 @@ def main():
     for item in summary["pnr"]:
         if not item["program_finished"]:
             summary["status"] = "fail"
+    for item in summary["act4_spike"]:
+        if item["status"] != "pass" or item["failed"] != 0:
+            summary["status"] = "fail"
     if summary["rvtrace_coverage"] and summary["rvtrace_coverage"].get("status") != "pass":
         summary["status"] = "fail"
     if summary["ci_health"] and summary["ci_health"].get("status") != "pass":
@@ -258,6 +279,14 @@ def main():
                 "- status={status} tests={test_count} ret={ret} traps={traps} "
                 "trap_exceptions={trap_exceptions} spike_commits={spike_commits} "
                 "terminal_traps={terminal_traps} source=`{source}`".format(**item)
+            )
+    if summary["act4_spike"]:
+        lines += ["", "## ACT/Spike Smoke"]
+        for item in summary["act4_spike"]:
+            lines.append(
+                "- status={status} tests={tests} passed={passed} failed={failed} source=`{source}`".format(
+                    **item
+                )
             )
     if summary["rvtrace_audits"]:
         lines += ["", "## RVTRACE"]

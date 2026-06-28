@@ -2,8 +2,8 @@
 """Audit external P1 verification tools.
 
 The default regression is self-contained. This script is intentionally stricter:
-it reports whether the external tools needed for RISCOF compliance and Spike
-lockstep work are actually available on this machine.
+it reports whether the external tools needed for RISCOF/ACT compliance and
+Spike lockstep work are actually available on this machine.
 """
 import argparse
 import os
@@ -27,6 +27,14 @@ TOOL_GROUPS = [
             (("riscv64-unknown-elf-gcc", "riscv64-elf-gcc"), "RISC-V bare-metal compiler"),
             (("riscv64-unknown-elf-objcopy", "riscv64-elf-objcopy"), "RISC-V objcopy"),
             (("riscv64-unknown-elf-objdump", "riscv64-elf-objdump"), "RISC-V objdump"),
+        ],
+    ),
+    (
+        "act4",
+        [
+            ("act", "ACT4 framework CLI"),
+            ("testgen", "ACT4 test generator CLI"),
+            ("covergroupgen", "ACT4 coverage generator CLI"),
         ],
     ),
     (

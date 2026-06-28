@@ -91,6 +91,7 @@ def total_field(items, key):
 def history_record(summary):
     pnr = latest_item(summary, "pnr")
     p1_external = latest_item(summary, "p1_external")
+    act4_spike = latest_item(summary, "act4_spike")
     rvtrace = latest_item(summary, "rvtrace_audits")
     coverage = rvtrace_coverage_record(summary.get("rvtrace_coverage"))
     health = ci_health_record(summary.get("ci_health"))
@@ -112,6 +113,7 @@ def history_record(summary):
         "p0_linux": bool(p0_passes),
         "p0_linux_modes": [item.get("mode") or "unknown" for item in p0_passes],
         "p1_external": p1_external_record(p1_external),
+        "act4_spike": act4_spike_record(act4_spike),
         "pnr": None,
         "rvtrace": None,
         "rvtrace_coverage": coverage,
@@ -166,6 +168,19 @@ def p1_external_record(item):
         "spike_commits": item.get("spike_commits"),
         "terminal_traps": item.get("terminal_traps"),
         "tests": tests,
+    }
+
+
+def act4_spike_record(item):
+    if not item:
+        return None
+    return {
+        "status": item.get("status"),
+        "tests": item.get("tests"),
+        "passed": item.get("passed"),
+        "failed": item.get("failed"),
+        "logdir": item.get("logdir"),
+        "source": item.get("source"),
     }
 
 
@@ -285,6 +300,7 @@ def trend_summary(records):
         else None,
         "p0_linux_runs": sum(1 for record in records if record.get("p0_linux")),
         "p1_external_runs": sum(1 for record in records if record.get("p1_external")),
+        "act4_spike_runs": sum(1 for record in records if record.get("act4_spike")),
         "rvtrace_runs": sum(1 for record in records if record.get("rvtrace")),
         "rvtrace_coverage_runs": sum(1 for record in records if record.get("rvtrace_coverage")),
         "ci_health_runs": sum(1 for record in records if record.get("ci_health")),
@@ -304,6 +320,7 @@ def trend_lines(trend, history_path):
         f"- profile counts: `{profile_text}`",
         f"- P0 Linux evidence runs: `{trend['p0_linux_runs']}`",
         f"- P1 external evidence runs: `{trend.get('p1_external_runs', 0)}`",
+        f"- ACT/Spike smoke runs: `{trend.get('act4_spike_runs', 0)}`",
         f"- RVTRACE audit runs: `{trend['rvtrace_runs']}`",
         f"- RVTRACE coverage artifact runs: `{trend['rvtrace_coverage_runs']}`",
         f"- CI evidence health runs: `{trend.get('ci_health_runs', 0)}`",
@@ -346,6 +363,13 @@ def row(summary):
             f"{latest_p1.get('trap_exceptions', 0)} trap-exc, "
             f"{latest_p1.get('terminal_traps', 0)} term"
         )
+    act4_spike = "-"
+    if summary.get("act4_spike"):
+        latest_act4 = summary["act4_spike"][-1]
+        act4_spike = (
+            f"{latest_act4.get('passed', 0)}/{latest_act4.get('tests', 0)} "
+            f"{latest_act4.get('status', 'unknown')}"
+        )
     pnr = "-"
     if summary.get("pnr"):
         latest_pnr = summary["pnr"][-1]
@@ -358,7 +382,7 @@ def row(summary):
             f"{latest_trace.get('traps', 0)} trap, "
             f"{latest_trace.get('amos', 0)} amo"
         )
-    return profile, status, p0, p1_external, pnr, rvtrace, summary.get("logdir", "-")
+    return profile, status, p0, p1_external, act4_spike, pnr, rvtrace, summary.get("logdir", "-")
 
 
 def rvtrace_coverage_lines(summary):
@@ -417,6 +441,7 @@ def main():
     latest_profiles = latest_profile_map(summaries)
     latest_p0 = latest_with(summaries, "p0_linux_passes")
     latest_p1_external = latest_with(summaries, "p1_external")
+    latest_act4_spike = latest_with(summaries, "act4_spike")
     latest_trace = latest_with(summaries, "rvtrace_audits")
     latest_coverage = latest_with(summaries, "rvtrace_coverage")
     latest_health = latest_with(summaries, "ci_health")
@@ -434,6 +459,7 @@ def main():
         "latest_by_profile": {profile: summary.get("logdir") for profile, summary in sorted(latest_profiles.items())},
         "latest_p0_linux": latest_p0.get("logdir") if latest_p0 else None,
         "latest_p1_external": latest_p1_external.get("logdir") if latest_p1_external else None,
+        "latest_act4_spike": latest_act4_spike.get("logdir") if latest_act4_spike else None,
         "latest_rvtrace": latest_trace.get("logdir") if latest_trace else None,
         "latest_rvtrace_coverage": latest_coverage.get("logdir") if latest_coverage else None,
         "latest_ci_health": latest_health.get("logdir") if latest_health else None,
@@ -449,6 +475,7 @@ def main():
                 "status": summary.get("status"),
                 "p0_linux_passes": summary.get("p0_linux_passes", []),
                 "p1_external": summary.get("p1_external", []),
+                "act4_spike": summary.get("act4_spike", []),
                 "pnr": summary.get("pnr", []),
                 "rvtrace_audits": summary.get("rvtrace_audits", []),
                 "rvtrace_coverage": summary.get("rvtrace_coverage"),
@@ -482,6 +509,7 @@ def main():
         f"- retained history runs: `{trend['runs']}`",
         f"- latest P0 Linux evidence: `{dashboard['latest_p0_linux'] or 'none'}`",
         f"- latest P1 external evidence: `{dashboard['latest_p1_external'] or 'none'}`",
+        f"- latest ACT/Spike smoke: `{dashboard['latest_act4_spike'] or 'none'}`",
         f"- latest RVTRACE audit: `{dashboard['latest_rvtrace'] or 'none'}`",
         f"- latest RVTRACE coverage: `{dashboard['latest_rvtrace_coverage'] or 'none'}`",
         f"- latest CI evidence health: `{dashboard['latest_ci_health'] or 'none'}`",
@@ -506,13 +534,13 @@ def main():
         "",
         "## Recent Runs",
         "",
-        "| Profile | Status | P0 Linux | P1 External | PnR Fmax/Target MHz | RVTRACE | Logdir |",
-        "|---|---:|---:|---|---:|---|---|",
+        "| Profile | Status | P0 Linux | P1 External | ACT/Spike | PnR Fmax/Target MHz | RVTRACE | Logdir |",
+        "|---|---:|---:|---|---|---:|---|---|",
     ]
     for summary in summaries[: args.limit]:
-        profile, status, p0, p1_external, pnr, rvtrace, logdir = row(summary)
+        profile, status, p0, p1_external, act4_spike, pnr, rvtrace, logdir = row(summary)
         lines.append(
-            f"| `{profile}` | `{status}` | `{p0}` | {p1_external} | `{pnr}` | {rvtrace} | `{logdir}` |"
+            f"| `{profile}` | `{status}` | `{p0}` | {p1_external} | {act4_spike} | `{pnr}` | {rvtrace} | `{logdir}` |"
         )
     if errors:
         lines += ["", "## Parse Warnings"]
