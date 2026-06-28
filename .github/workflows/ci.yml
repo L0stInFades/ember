@@ -83,3 +83,88 @@ jobs:
             logs/ci-dashboard.md
             logs/ci-history.jsonl
             logs/ci-trend.md
+
+  p1-external:
+    name: P1 external Spike gate
+    runs-on: macos-latest
+    timeout-minutes: 180
+
+    env:
+      P1_SPIKE_REF: 55b4658dbf574ba0b714083ec436ce2cb5be1998
+      P1_SPIKE_JOBS: 3
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install external P1 toolchain
+        run: |
+          brew update
+          brew install \
+            icarus-verilog \
+            llvm \
+            lld \
+            riscv64-elf-gcc \
+            dtc \
+            autoconf \
+            automake \
+            libtool \
+            coreutils
+          if [ -d /usr/local/opt/llvm/bin ]; then
+            echo "/usr/local/opt/llvm/bin" >> "$GITHUB_PATH"
+          fi
+          if [ -d /opt/homebrew/opt/llvm/bin ]; then
+            echo "/opt/homebrew/opt/llvm/bin" >> "$GITHUB_PATH"
+          fi
+          if [ -d /usr/local/opt/lld/bin ]; then
+            echo "/usr/local/opt/lld/bin" >> "$GITHUB_PATH"
+          fi
+          if [ -d /opt/homebrew/opt/lld/bin ]; then
+            echo "/opt/homebrew/opt/lld/bin" >> "$GITHUB_PATH"
+          fi
+
+      - name: Cache external P1 tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            .p1/riscof-venv
+            .p1/riscv-arch-test
+            .p1/riscv-isa-sim
+            .p1/riscv-isa-sim-build
+            .p1/spike
+          key: p1-external-${{ runner.os }}-${{ runner.arch }}-spike-55b4658-${{ hashFiles('tools/setup_riscof_env.sh', 'tools/setup_spike_env.sh') }}
+
+      - name: Setup RISCOF
+        run: tools/setup_riscof_env.sh
+
+      - name: Setup Spike
+        run: tools/setup_spike_env.sh
+
+      - name: Run P1 external profile
+        env:
+          LOGDIR: logs/github-p1-external-${{ github.run_id }}
+        run: ./verify_ci.sh p1
+
+      - name: Publish P1 external summary
+        if: always()
+        run: |
+          summary="logs/github-p1-external-${GITHUB_RUN_ID}/summary.md"
+          if [ -f "$summary" ]; then
+            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f logs/ci-dashboard.md ]; then
+            printf '\n' >> "$GITHUB_STEP_SUMMARY"
+            cat logs/ci-dashboard.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload P1 external logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p1-external-logs-${{ github.run_id }}
+          path: |
+            logs/
+            logs/ci-dashboard.json
+            logs/ci-dashboard.md
+            logs/ci-history.jsonl
+            logs/ci-trend.md
