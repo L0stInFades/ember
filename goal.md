@@ -458,6 +458,19 @@ The pushed source commit `5e70ce0` passed hosted macOS CI as run `28337807540`:
 quick `pass=1 fail=0`; hosted P1 external `logs/github-p1-external-28337807540`
 records the same 17-test Spike-prefix gate (`ret=70670`,
 `trap_exceptions=23`, `terminal_traps=1`) plus 106/106 ACT/Spike smoke tests.
+The ACT/Spike evidence path now records selected group composition, not just the
+106-test total: `tools/run_act4_spike_smoke.sh` emits `P1_ACT4_SPIKE_GROUPS`,
+`tools/collect_ci_metrics.py` and `tools/render_ci_dashboard.py` retain it, and
+`tools/check_ci_dashboard.py` requires the exact 12-group default composition by
+default. Local evidence `logs/ci-p1-20260629-act4-groups` passes with 17
+Spike-prefix tests plus 106/106 ACT/Spike tests and the expected group CSV;
+`logs/ci-evidence-health-20260629-act4-groups` passes the refreshed 48-check
+health gate; the pre-refresh dashboard check fails on missing groups; and an
+intentionally shortened `--require-p1-act4-spike-groups` list fails against the
+retained CSV. `logs/p1-act4-spike-misalign-candidates-20260629` records the
+negative `Misalign`/`MisalignZca` ACT result: those groups require
+`MISALIGNED_LDST: true` successful non-aligned load/store behavior, while Ember
+currently implements precise misaligned-access traps.
 
 ---
 

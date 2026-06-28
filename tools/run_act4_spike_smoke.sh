@@ -10,7 +10,8 @@ LOGDIR=${LOGDIR:-logs/p1-act4-spike-$(date +%Y%m%d-%H%M%S)}
 ARCH_TEST=${P1_ARCH_TEST_DIR:-"$ROOT/.p1/riscv-arch-test"}
 CONFIG_DIR=${P1_ACT4_CONFIG_DIR:-"$ROOT/p1/act4/ember-rv32i"}
 TESTS=${P1_ACT4_TESTS:-}
-ACT_GROUPS=${P1_ACT4_GROUPS:-"I M Zmmul Zaamo Zalrsc Zca Zicsr Zicntr Zifencei Zihintpause Zihintntl ZihintntlZca"}
+DEFAULT_ACT_GROUPS="I M Zmmul Zaamo Zalrsc Zca Zicsr Zicntr Zifencei Zihintpause Zihintntl ZihintntlZca"
+ACT_GROUPS=${P1_ACT4_GROUPS:-"$DEFAULT_ACT_GROUPS"}
 ZICSR_MARCH=${P1_ACT4_ZICSR_MARCH:-rv32i_zicsr_zifencei_zca}
 MAXCYC=${P1_ACT4_MAXCYC:-1500000}
 SPIKE_INSNS=${P1_ACT4_SPIKE_INSNS:-2000000}
@@ -57,6 +58,28 @@ if [ -z "$TESTS" ]; then
   )
 fi
 [ -n "$TESTS" ] || { echo "no ACT RV32 tests selected" >&2; exit 1; }
+
+selected_act_groups() {
+  local test group groups
+  groups=""
+  for test in $TESTS; do
+    if [[ "$test" == */* ]]; then
+      group=${test%%/*}
+    else
+      group=${test%%-*}
+    fi
+    case " $groups " in
+      *" $group "*) ;;
+      *) groups="${groups:+$groups }$group" ;;
+    esac
+  done
+  printf '%s\n' "$groups"
+}
+
+ACT_GROUP_LIST=$(selected_act_groups)
+ACT_GROUP_COUNT=$(set -- $ACT_GROUP_LIST; printf '%s\n' "$#")
+ACT_GROUP_CSV=$(printf '%s\n' $ACT_GROUP_LIST | paste -sd, -)
+echo "P1_ACT4_SPIKE_GROUPS: count=$ACT_GROUP_COUNT groups=$ACT_GROUP_CSV"
 
 find_test_src() {
   local test=$1

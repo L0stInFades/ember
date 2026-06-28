@@ -6,6 +6,22 @@ import json
 from pathlib import Path
 
 
+DEFAULT_P1_ACT4_SPIKE_GROUPS = [
+    "I",
+    "M",
+    "Zmmul",
+    "Zaamo",
+    "Zalrsc",
+    "Zca",
+    "Zicsr",
+    "Zicntr",
+    "Zifencei",
+    "Zihintpause",
+    "Zihintntl",
+    "ZihintntlZca",
+]
+
+
 def load_json(path):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -102,6 +118,11 @@ def main():
     ap.add_argument("--min-p1-external-runs", type=int, default=1)
     ap.add_argument("--min-p1-external-tests", type=int, default=17)
     ap.add_argument("--min-p1-act4-spike-tests", type=int, default=106)
+    ap.add_argument(
+        "--require-p1-act4-spike-groups",
+        default=",".join(DEFAULT_P1_ACT4_SPIKE_GROUPS),
+        help="comma-separated exact ACT/Spike group list required for the latest P1 evidence; empty disables",
+    )
     ap.add_argument("--min-p1-external-trap-exceptions", type=int, default=23)
     ap.add_argument("--min-p1-external-terminal-traps", type=int, default=1)
     ap.add_argument("--min-rvtrace-runs", type=int, default=1)
@@ -265,6 +286,23 @@ def main():
                 f"passed={latest_act4.get('passed', 0)} tests={latest_act4.get('tests', 0)}",
                 p1_source,
             )
+            required_act4_groups = [
+                group.strip()
+                for group in args.require_p1_act4_spike_groups.split(",")
+                if group.strip()
+            ]
+            if required_act4_groups:
+                actual_act4_groups = latest_act4.get("groups") or []
+                add_check(
+                    checks,
+                    "P1 ACT/Spike smoke groups",
+                    actual_act4_groups == required_act4_groups,
+                    "groups={actual} required={required}".format(
+                        actual=",".join(actual_act4_groups) or "missing",
+                        required=",".join(required_act4_groups),
+                    ),
+                    p1_source,
+                )
 
     if not args.no_require_pnr:
         pnr = dashboard.get("best_pnr") or {}

@@ -22,6 +22,7 @@ SPIKE_PREFIX_RE = re.compile(
     r"last_pc=(?P<last_pc>0x[0-9a-fA-F]+)(?P<rest>.*)"
 )
 P1_EXTERNAL_RE = re.compile(r"P1_EXTERNAL: PASS logdir=(?P<logdir>.+)")
+ACT4_SPIKE_GROUPS_RE = re.compile(r"P1_ACT4_SPIKE_GROUPS: count=(?P<count>\d+) groups=(?P<groups>\S*)")
 ACT4_SPIKE_RE = re.compile(
     r"P1_ACT4_SPIKE: (?P<status>PASS|FAIL) tests=(?P<tests>\d+) "
     r"passed=(?P<passed>\d+) failed=(?P<failed>\d+) logdir=(?P<logdir>.+)"
@@ -71,18 +72,29 @@ def parse_log(path):
 
     spike_entries = []
     current_spike_test = None
+    current_act4_groups = None
     for line in text.splitlines():
+        match = ACT4_SPIKE_GROUPS_RE.search(line)
+        if match:
+            groups = [group for group in match.group("groups").split(",") if group]
+            current_act4_groups = {
+                "group_count": int(match.group("count")),
+                "groups": groups,
+            }
+            continue
         match = ACT4_SPIKE_RE.search(line)
         if match:
-            metrics["act4_spike"].append(
-                {
-                    "status": match.group("status").lower(),
-                    "tests": int(match.group("tests")),
-                    "passed": int(match.group("passed")),
-                    "failed": int(match.group("failed")),
-                    "logdir": match.group("logdir"),
-                }
-            )
+            item = {
+                "status": match.group("status").lower(),
+                "tests": int(match.group("tests")),
+                "passed": int(match.group("passed")),
+                "failed": int(match.group("failed")),
+                "logdir": match.group("logdir"),
+            }
+            if current_act4_groups:
+                item.update(current_act4_groups)
+                current_act4_groups = None
+            metrics["act4_spike"].append(item)
             continue
         header = SPIKE_PREFIX_HEADER_RE.match(line)
         if header:
@@ -283,9 +295,11 @@ def main():
     if summary["act4_spike"]:
         lines += ["", "## ACT/Spike Smoke"]
         for item in summary["act4_spike"]:
+            groups_text = ",".join(item.get("groups", [])) or "-"
             lines.append(
-                "- status={status} tests={tests} passed={passed} failed={failed} source=`{source}`".format(
-                    **item
+                "- status={status} tests={tests} passed={passed} failed={failed} groups={groups_text} source=`{source}`".format(
+                    groups_text=groups_text,
+                    **item,
                 )
             )
     if summary["rvtrace_audits"]:

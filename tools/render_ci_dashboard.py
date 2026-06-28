@@ -179,6 +179,8 @@ def act4_spike_record(item):
         "tests": item.get("tests"),
         "passed": item.get("passed"),
         "failed": item.get("failed"),
+        "group_count": item.get("group_count"),
+        "groups": item.get("groups", []),
         "logdir": item.get("logdir"),
         "source": item.get("source"),
     }
@@ -366,9 +368,11 @@ def row(summary):
     act4_spike = "-"
     if summary.get("act4_spike"):
         latest_act4 = summary["act4_spike"][-1]
+        group_count = latest_act4.get("group_count")
+        group_suffix = f", {group_count} groups" if group_count is not None else ""
         act4_spike = (
             f"{latest_act4.get('passed', 0)}/{latest_act4.get('tests', 0)} "
-            f"{latest_act4.get('status', 'unknown')}"
+            f"{latest_act4.get('status', 'unknown')}{group_suffix}"
         )
     pnr = "-"
     if summary.get("pnr"):

@@ -126,9 +126,10 @@ regression:
 - The metrics/dashboard layer now retains this external P1 evidence: `p1`
   profile summaries include external test count, compared retired rows, Spike
   commit count, non-terminal trap-exception checks, and terminal-trap coverage,
-  plus the ACT/Spike smoke pass count. Evidence-health requires at least one
-  retained P1 external run with 17 tests, 23 ordinary trap-exception checks, one
-  terminal trap, and 106 ACT/Spike smoke tests.
+  plus the ACT/Spike smoke pass count and exact selected ACT group list.
+  Evidence-health requires at least one retained P1 external run with 17 tests,
+  23 ordinary trap-exception checks, one terminal trap, 106 ACT/Spike smoke
+  tests, and the exact default group list (`I,M,Zmmul,Zaamo,Zalrsc,Zca,Zicsr,Zicntr,Zifencei,Zihintpause,Zihintntl,ZihintntlZca`).
 - This is a Spike prefix plus ACT/Spike smoke gate, not full RVVI or full ACT4
   certification. Full ACT4/UDB remains future work; the local system Ruby is
   still 2.6 while upstream UDB wants Ruby 3.2+. RISCOF/ACT4 DUT/reference plugins,
@@ -1140,6 +1141,18 @@ quick `pass=1 fail=0`, retained RVTRACE audit remains green, and
 `logs/github-p1-external-28337807540` records the same 17-test Spike-prefix gate
 (`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus 106/106 ACT/Spike
 smoke tests.
+The ACT/Spike summary path now emits and retains `P1_ACT4_SPIKE_GROUPS`, and
+`tools/check_ci_dashboard.py` requires the exact 12-group default composition by
+default instead of trusting the 106-test total alone. The refreshed local P1 run
+`logs/ci-p1-20260629-act4-groups` records 17 Spike-prefix tests plus 106/106
+ACT/Spike tests with `group_count=12` and the expected group CSV; refreshed
+evidence-health passes in `logs/ci-evidence-health-20260629-act4-groups`; a
+pre-refresh check fails on missing groups, and an intentionally wrong
+`--require-p1-act4-spike-groups` list fails against the retained group CSV.
+`logs/p1-act4-spike-misalign-candidates-20260629` confirms the upstream ACT
+`Misalign` and `MisalignZca` groups remain excluded: they are tagged
+`MISALIGNED_LDST: true` and validate successful non-aligned load/store behavior,
+while Ember's current architectural choice is precise misaligned-access traps.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
