@@ -289,7 +289,7 @@ The retained metrics path now treats P1 external as first-class health evidence:
 `tools/collect_ci_metrics.py` parses `SPIKE_TRACE_PREFIX` and `P1_EXTERNAL`
 summaries, `tools/render_ci_dashboard.py` records latest/trend P1 external runs,
 and `tools/check_ci_dashboard.py` requires at least one retained P1 external run
-with 8 tests and one terminal trap by default. A fresh `./verify_ci.sh p1` passes
+with 16 tests and one terminal trap by default. A fresh `./verify_ci.sh p1` passes
 in `logs/ci-p1-20260629-p1-external` with 8 external tests, 9,167 compared
 retired rows, 3 compared trap rows, 9,167 Spike commits, and 1 terminal-trap
 comparison; `logs/ci-evidence-health-20260629-p1-external-v2` passes 42/42
@@ -310,6 +310,17 @@ tests, 9,167 compared retired rows, 3 compared trap rows, 9,167 Spike commits,
 and 1 terminal-trap comparison. That moves the current external Spike prefix
 gate from local-only evidence into hosted CI, while full RISCOF plugin/RVVI
 lockstep remains future P1 work.
+The local external Spike gate has now been widened beyond the initial 8-test
+hosted gate: `verify_p1_external.sh` dynamically detects each newer directed
+test's syscon report-store stop point, then compares Spike prefixes for `mxr`,
+`upage`, `ifault`, `wpfault`, `sum`, `badpte`, `superpage`, and `amo_mmu` with
+`RV32IMA_Svadu` and a 4 MB memory map. The
+`logs/ci-p1-20260629-p1-external-sv32` run passes with 16 external tests,
+65,219 compared retired rows, 23 compared trap rows, 77,632 Spike commits, and
+1 terminal-trap comparison.
+`logs/ci-evidence-health-20260629-p1-external-sv32` passes 42/42 checks with
+the new default 16-test floor. Negative checks for `--min-p1-external-tests 17`
+and `--min-p1-external-terminal-traps 2` fail as expected.
 
 ---
 

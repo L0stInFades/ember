@@ -16,6 +16,34 @@ fi
 
 python3 tools/p1_tool_audit.py
 
+find_syscon_stop_pc() {
+  python3 - "$1" <<'PY'
+import csv
+import sys
+
+trace_path = sys.argv[1]
+with open(trace_path, "r", encoding="ascii", newline="") as f:
+    rows = list(csv.DictReader(f))
+
+for prev, row in zip(rows, rows[1:]):
+    try:
+        instr = int(row["instr"], 16)
+    except ValueError:
+        continue
+    if (
+        prev["event"] == "RET"
+        and prev["rd"] != "0"
+        and prev["wdata"].lower() == "11100000"
+        and row["event"] == "RET"
+        and (instr & 0x7F) == 0x23
+    ):
+        print("0x" + row["pc"])
+        break
+else:
+    raise SystemExit(f"{trace_path}: missing syscon report store stop point")
+PY
+}
+
 if [ "${P1_SKIP_SPIKE_PREFIX:-0}" != "1" ]; then
   LOGDIR=${LOGDIR:-logs/p1-external-$(date +%Y%m%d-%H%M%S)}
   mkdir -p "$LOGDIR"
@@ -150,6 +178,38 @@ PY
       --spike-log "$LOGDIR/spike_${t}.log" \
       --base 0x80000000 \
       --expect-terminal-trap
+  fi
+
+  if [ "${P1_SKIP_SPIKE_SV32_PREFIX:-0}" != "1" ]; then
+    tests=${P1_SPIKE_SV32_PREFIX_TESTS:-"mxr upage ifault wpfault sum badpte superpage amo_mmu"}
+    for t in $tests; do
+      echo "=== spike-prefix $t ==="
+      rm -f rvtrace.log "$LOGDIR/rvtrace_${t}.csv"
+      LOG="$LOGDIR/${t}_dut.log" \
+        EXTRA_IVERILOG_FLAGS="-D RVTRACE" \
+        bash tests/build_run.sh "$t" >"$LOGDIR/${t}_build_run.log" 2>&1
+      test -s rvtrace.log
+      mv rvtrace.log "$LOGDIR/rvtrace_${t}.csv"
+
+      python3 tools/check_rvtrace.py \
+        --trace "$LOGDIR/rvtrace_${t}.csv" \
+        --hex "tests/${t}.hex" \
+        --base 0x80000000 \
+        --min-ret 1
+
+      stop_pc=$(find_syscon_stop_pc "$LOGDIR/rvtrace_${t}.csv")
+
+      python3 tools/spike_trace_prefix.py \
+        --trace "$LOGDIR/rvtrace_${t}.csv" \
+        --elf "tests/${t}.elf" \
+        --spike spike \
+        --spike-log "$LOGDIR/spike_${t}.log" \
+        --base 0x80000000 \
+        --mem 0x80000000:0x400000 \
+        --isa RV32IMA_Svadu \
+        --instructions 40000 \
+        --stop-before-pc "$stop_pc"
+    done
   fi
 
   echo "P1_EXTERNAL: PASS logdir=$LOGDIR"
