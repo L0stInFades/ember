@@ -779,11 +779,12 @@ A/D updates. A fresh quick profile passed in
 `verify_ci.sh p1-trace-audit` profile over that logdir passed in
 `logs/ci-p1-trace-audit-20260629-010528` across 11 tests with 39,918 retired
 instructions, 12 traps, 5 AMOs, 5 PTE updates, and 15 privilege switches.
-Hosted macOS GitHub Actions quick CI also passed on run `28329653376` for commit
-`2216509`: artifact summary `logs/github-quick-28329653376` reports quick
-`pass=6 fail=0`, and re-auditing the downloaded hosted RVTRACE CSVs locally gives
-the same 11-test / 39,918-retired / 12-trap / 5-AMO / 5-PTE-update /
-15-privilege-switch baseline.
+Hosted macOS GitHub Actions now runs both quick and the retained RVTRACE coverage
+audit. Run `28329835965` for commit `246bc30` passed `quick regression`; artifact
+summary `logs/github-quick-28329835965` reports quick `pass=6 fail=0`, and
+`logs/github-p1-trace-audit-28329835965` reports the same 11-test /
+39,918-retired / 12-trap / 5-AMO / 5-PTE-update / 15-privilege-switch baseline
+with all 27 coverage-floor checks passing.
 `tools/collect_ci_metrics.py` now turns any `verify_ci.sh` log directory into
 machine-readable `summary.json` and human-readable `summary.md`, collecting CI
 pass/fail, `verify.sh` pass/fail, retained RVTRACE coverage, CI evidence health,
@@ -848,8 +849,11 @@ fresh `./verify_ci.sh quick` passed with `pass=1 fail=0` in
 `logs/ci-quick-20260629-010333`. The same cron wrapper also passed the combined
 retained evidence profile in `logs/cron/p0-evidence-20260628-231323`. The
 hosted/self-hosted workflow files have been syntax-parsed locally; `actionlint` is
-not installed in this environment. The hosted macOS quick workflow has now passed
-remotely; the first self-hosted scheduled/nightly runner execution is still pending.
+not installed in this environment. The hosted macOS quick workflow now passes
+remotely with retained RVTRACE coverage audit enabled; the first self-hosted
+scheduled/nightly runner execution is still pending. The hosted workflow ignores
+docs-only Markdown pushes so evidence-record updates do not consume full quick
+runner time unless source, script, test, or workflow files also changed.
 The GitHub worktree migration also removed several hidden local-artifact
 dependencies: `run_rvtests.sh` now locates LLVM tools and rebuilds `soc_rt` from
 source with `SIM_INIT`, `tests/build_run.sh` compiles objects and invokes

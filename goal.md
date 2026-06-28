@@ -151,12 +151,13 @@ GitHub worktree at `/Users/Apple/ember`, the source-only quick profile also pass
 there with `logs/ci-quick-20260629-010333`; the retained RVTRACE audit/coverage
 passes in `logs/ci-p1-trace-audit-20260629-010528`; and the local retained
 evidence-health gate passes in `logs/ci-evidence-health-20260629-010541` with
-36/36 checks passing. The first hosted macOS GitHub quick CI is now green too:
-run `28329653376` on commit `2216509` completed `quick regression` successfully,
-with artifact summary `logs/github-quick-28329653376` reporting quick `pass=6
-fail=0`. The downloaded hosted RVTRACE artifact was re-audited locally and matches
-the retained coverage baseline: 11 tests, 39,918 retired instructions, 12 traps,
-5 AMOs, 5 PTE updates, and 15 privilege switches. The migration fixed
+36/36 checks passing. The hosted macOS GitHub quick CI now runs both quick and
+retained RVTRACE coverage audit: run `28329835965` on commit `246bc30` completed
+`quick regression` successfully, with `logs/github-quick-28329835965` reporting
+quick `pass=6 fail=0` and `logs/github-p1-trace-audit-28329835965` reporting
+RVTRACE coverage for 11 tests, 39,918 retired instructions, 12 traps, 5 AMOs,
+5 PTE updates, 15 privilege switches, and 27/27 floor checks passing. The
+migration fixed
 reproducibility issues that had been hidden by local generated artifacts:
 `run_rvtests.sh` now locates LLVM tools, rebuilds `soc_rt` with `SIM_INIT`, and
 uses checked-in `rvtests/` plus `link.ld`; `tests/build_run.sh` compiles objects
