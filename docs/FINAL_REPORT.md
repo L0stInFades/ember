@@ -1118,6 +1118,11 @@ Spike-prefix gate (`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus
 intended against the retained value of 91. A local quick profile reached all
 code-related checks (`directed`, `rvtests`, `trace`, `reftrace`, and `cache`)
 but stopped at `vtop_synth` because this host currently lacks `verilator`.
+Source commit `f7d794e` then passed hosted macOS CI as run `28337247599`:
+quick `pass=1 fail=0`, retained RVTRACE audit remains green, and
+`logs/github-p1-external-28337247599` records the same 17-test Spike-prefix gate
+(`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus 91/91 ACT/Spike
+smoke tests.
 The default ACT/Spike smoke now adds `Zmmul`, `Zicntr`, `Zihintpause`,
 `Zihintntl`, and `ZihintntlZca` to the existing passing set. The candidate run
 `logs/p1-act4-spike-candidates-20260629` passes those 15 newly added tests, and
@@ -1130,10 +1135,10 @@ full local P1 profile `logs/ci-p1-20260629-act4-spike-106` passes with the same
 `logs/ci-evidence-health-20260629-act4-spike-106`; and
 `python3 tools/check_ci_dashboard.py --min-p1-act4-spike-tests 107` fails as
 intended against the retained value of 106.
-Source commit `f7d794e` then passed hosted macOS CI as run `28337247599`:
+Source commit `5e70ce0` then passed hosted macOS CI as run `28337807540`:
 quick `pass=1 fail=0`, retained RVTRACE audit remains green, and
-`logs/github-p1-external-28337247599` records the same 17-test Spike-prefix gate
-(`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus 91/91 ACT/Spike
+`logs/github-p1-external-28337807540` records the same 17-test Spike-prefix gate
+(`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus 106/106 ACT/Spike
 smoke tests.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,

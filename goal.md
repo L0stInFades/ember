@@ -437,6 +437,11 @@ The local quick profile's code-related stages (`directed`, `rvtests`, `trace`,
 `reftrace`, and `cache`) pass, but the full local quick run stops at `vtop_synth`
 because this host currently lacks `verilator`; hosted macOS CI is expected to
 cover that after push.
+The pushed source commit `f7d794e` passed hosted macOS CI as run `28337247599`:
+quick `pass=1 fail=0`, retained RVTRACE audit remains green, and the hosted P1
+external artifact `logs/github-p1-external-28337247599` records the same
+17-test Spike-prefix gate (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus 91/91 ACT/Spike smoke tests.
 The default ACT/Spike smoke is now expanded again to 106 pinned upstream RV32
 tests by adding `Zmmul`, `Zicntr`, `Zihintpause`, `Zihintntl`, and
 `ZihintntlZca` to the existing `I`, `M`, `Zaamo`, `Zalrsc`, `Zca`, `Zicsr`, and
@@ -449,11 +454,10 @@ passes 106/106; full local P1 `logs/ci-p1-20260629-act4-spike-106` passes with
 plus 106/106 ACT/Spike tests; evidence-health passes in
 `logs/ci-evidence-health-20260629-act4-spike-106`; and the negative
 `--min-p1-act4-spike-tests 107` check fails against the retained value of 106.
-The pushed source commit `f7d794e` passed hosted macOS CI as run `28337247599`:
-quick `pass=1 fail=0`, retained RVTRACE audit remains green, and the hosted P1
-external artifact `logs/github-p1-external-28337247599` records the same
-17-test Spike-prefix gate (`ret=70670`, `trap_exceptions=23`,
-`terminal_traps=1`) plus 91/91 ACT/Spike smoke tests.
+The pushed source commit `5e70ce0` passed hosted macOS CI as run `28337807540`:
+quick `pass=1 fail=0`; hosted P1 external `logs/github-p1-external-28337807540`
+records the same 17-test Spike-prefix gate (`ret=70670`,
+`trap_exceptions=23`, `terminal_traps=1`) plus 106/106 ACT/Spike smoke tests.
 
 ---
 
