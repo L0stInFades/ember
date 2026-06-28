@@ -9,8 +9,21 @@ import sys
 from pathlib import Path
 
 
-DEFAULT_TESTS = ["isa", "amotest", "mmu", "ctest", "shtest", "mtest", "utrap", "mprv", "mxr", "upage", "ifault"]
-TRAP_ALLOWED = {"mmu", "utrap", "mprv", "mxr", "upage", "ifault"}
+DEFAULT_TESTS = [
+    "isa",
+    "amotest",
+    "mmu",
+    "ctest",
+    "shtest",
+    "mtest",
+    "utrap",
+    "mprv",
+    "mxr",
+    "upage",
+    "ifault",
+    "wpfault",
+]
+TRAP_ALLOWED = {"mmu", "utrap", "mprv", "mxr", "upage", "ifault", "wpfault"}
 EXPECT_M_PRIV = {"isa", "amotest", "ctest", "shtest", "mtest"}
 DEFAULT_COVERAGE_FLOORS = {
     "isa": {"retired": 600, "amos": 3},
@@ -24,6 +37,7 @@ DEFAULT_COVERAGE_FLOORS = {
     "mxr": {"retired": 5000, "traps": 2, "pte_updates": 1},
     "upage": {"retired": 9000, "traps": 3, "pte_updates": 2, "priv_switches": 6},
     "ifault": {"retired": 9000, "traps": 2, "priv_switches": 2},
+    "wpfault": {"retired": 5000, "traps": 2, "pte_updates": 2, "priv_switches": 2},
 }
 REF_RE = re.compile(
     r"RVTRACE_REF: PASS rows=(?P<rows>\d+) retired=(?P<retired>\d+) traps=(?P<traps>\d+) "
@@ -175,10 +189,10 @@ def main():
     ap.add_argument("--logdir", required=True, help="directory containing rvtrace_<test>.csv files")
     ap.add_argument("--tests", nargs="+", default=DEFAULT_TESTS, help="tests to audit")
     ap.add_argument("--base", default="0x80000000", help="RAM base address")
-    ap.add_argument("--min-total-traps", type=int, default=12)
+    ap.add_argument("--min-total-traps", type=int, default=14)
     ap.add_argument("--min-total-amos", type=int, default=5)
-    ap.add_argument("--min-total-pte-updates", type=int, default=5)
-    ap.add_argument("--min-total-priv-switches", type=int, default=15)
+    ap.add_argument("--min-total-pte-updates", type=int, default=7)
+    ap.add_argument("--min-total-priv-switches", type=int, default=17)
     ap.add_argument(
         "--no-default-coverage-floors",
         action="store_true",

@@ -100,8 +100,8 @@ path scriptable local-CI/nightly profiles (`quick`, `pr`, `p0-smoke`, `p0-audit`
 combined retained Linux+PnR evidence audit, retained RVTRACE/ref-model audit,
 retained dashboard/history health audit, and reused P0 smoke profile all pass. The
 P1 trace audit rechecks retained `rvtrace_*.csv` with both
-structural and reference-model checkers and currently covers 11 tests, 39,918
-retired instructions, 12 traps, 5 AMOs, 5 PTE updates, and 15 privilege switches.
+structural and reference-model checkers and currently covers 12 tests, 45,586
+retired instructions, 14 traps, 5 AMOs, 7 PTE updates, and 17 privilege switches.
 The added `mprv` directed trace covers MPRV+SUM data permissions: a user-page load
 through `MPRV=1, MPP=S` succeeds with `SUM=1`, then faults with `SUM=0` and records
 `mcause=13`, `mtval=0x40000000`, and the pre-trap MPRV bit.
@@ -119,6 +119,11 @@ records `scause=12` and `stval=sepc`, returns to the `jalr` continuation, and
 confirms the non-executable target PTE did not receive A/D updates. The local
 `tools/rvtrace_ref.py` model now handles cause-12 fetch page-fault rows instead of
 rejecting them as outside the reference model.
+The added `wpfault` directed trace covers Sv32 store-permission faults and A/D
+side effects: an S-mode load from a read-only supervisor page succeeds and sets
+only A, an S-mode store to that same page delegates a store page fault without
+setting D, then S-mode updates the PTE to add W and confirms the retried store
+sets D.
 `tools/collect_ci_metrics.py` now emits per-run `summary.json` and `summary.md`
 artifacts from `verify_ci.sh` logs, covering CI pass/fail, retained RVTRACE
 coverage, CI evidence health, P0 Linux gate status, and PnR Fmax/resource metrics;
@@ -133,8 +138,8 @@ enforces default per-test coverage floors so those signals cannot silently move 
 of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
 artifacts, P0 Linux login evidence, 40 MHz PnR evidence, RVTRACE aggregate counts,
-and 27 per-test coverage-floor checks. The current dashboard scans 22 summaries,
-retains 22 history records, has a 22-run pass streak, and tracks the latest P0 Linux
+and 31 per-test coverage-floor checks. The current dashboard in this worktree
+scans 12 summaries, retains 12 history records, has a 2-run pass streak, and tracks the latest P0 Linux
 evidence, latest retained RVTRACE audit/coverage, latest CI evidence health, best
 PnR Fmax, profile counts, floor-check status, latest run per profile, and recent
 runs. `verify_ci.sh` refreshes this dashboard and trend history after every profile,
@@ -145,13 +150,22 @@ The CI/cron wiring now exists too:
 `.github/workflows/nightly.yml` targets a self-hosted macOS nightly at 01:00
 Asia/Shanghai, and `tools/ci_cron.sh` provides a locked local cron/launchd wrapper;
 `tools/ci_cron.sh p0-audit`, `tools/ci_cron.sh p0-evidence`,
-`tools/ci_cron.sh p1-trace-audit`, `./verify_ci.sh evidence-health`, and a fresh
-`./verify_ci.sh quick` all pass locally. After moving the work into the actual
+`tools/ci_cron.sh p1-trace-audit`, `./verify_ci.sh evidence-health`, and quick
+profile all have retained local passing evidence. After moving the work into the actual
 GitHub worktree at `/Users/Apple/ember`, the source-only quick profile also passes
 there with `logs/ci-quick-20260629-010333`; the retained RVTRACE audit/coverage
 passes in `logs/ci-p1-trace-audit-20260629-010528`; and the local retained
 evidence-health gate passes in `logs/ci-evidence-health-20260629-010541` with
-36/36 checks passing. The hosted macOS GitHub quick CI now runs both quick and
+36/36 checks passing. For the current `wpfault` increment, local directed tests,
+rvtests, RVTRACE structural checks, RVTRACE reference-model checks, and cache/stage
+smokes pass in `logs/ci-quick-20260629-wpfault/quick`, while full local `quick`
+stops at `vtop_synth` because this machine has no `verilator` or `oss-cad-suite`.
+The retained RVTRACE audit/coverage over those traces passes in
+`logs/ci-p1-trace-audit-20260629-wpfault` with 12 tests, 45,586 retired
+instructions, 14 traps, 5 AMOs, 7 PTE updates, 17 privilege switches, and 31/31
+floor checks; the local retained evidence-health gate passes in
+`logs/ci-evidence-health-20260629-wpfault` with 36/36 checks. The hosted macOS
+GitHub quick CI now runs both quick and
 retained RVTRACE coverage audit: run `28329835965` on commit `246bc30` completed
 `quick regression` successfully, with `logs/github-quick-28329835965` reporting
 quick `pass=6 fail=0` and `logs/github-p1-trace-audit-28329835965` reporting
@@ -167,7 +181,8 @@ the synth-shell memfile fixture is checked in; `build_vtop.sh` falls back to
 `sim/sim_main.cpp`; and optional `oss-cad-suite` loading no longer fails when the
 directory is absent. Negative
 checks for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`, `mxr:retired=6000`,
-`upage:retired=10000`, `ifault:retired=10000`, and `--min-rvtrace-tests 12` fail as expected. The remaining P0/P1 work is observing the first real self-hosted
+`upage:retired=10000`, `ifault:retired=10000`, `wpfault:pte_updates=3`, and
+`--min-rvtrace-tests 13` fail as expected. The remaining P0/P1 work is observing the first real self-hosted
 scheduled/nightly green run, broader coverage beyond directed trace/ref-model tests,
 populating the retained trend history from real remote CI/cron runs, and default
 integration. The behavioral single-cycle path is no longer the only login path, but

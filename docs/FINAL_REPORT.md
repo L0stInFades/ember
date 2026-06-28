@@ -756,6 +756,7 @@ coverage must remain in `mmu`, user-trap privilege switching must remain in `utr
 MPRV+SUM permission-fault coverage must remain in `mprv`, MXR execute-only-load
 coverage must remain in `mxr`, U-mode page fetch/data plus delegated U->S faults
 must remain in `upage`, instruction page-fault coverage must remain in `ifault`,
+write-permission-fault plus A/D side-effect coverage must remain in `wpfault`,
 and every directed trace must keep a minimum
 retired-instruction floor. `tests/mprv.c` lifts the existing
 MPRV/SUM data-privilege smoke into the default directed/trace/reftrace baseline:
@@ -774,11 +775,23 @@ page-fault traps instead of rejecting fetch faults as outside the reference mode
 and `tests/ifault.c` covers that path: S-mode jumps to a supervisor-readable but
 non-executable page, the delegated S handler records `scause=12`, `stval=sepc`,
 returns to the `jalr` continuation, and confirms the faulting PTE did not receive
-A/D updates. A fresh quick profile passed in
+A/D updates. `tests/wpfault.c` adds the paired Sv32 store-permission path: S-mode
+loads from a read-only supervisor page and observes only A set, then attempts a
+store to the same page, catches delegated `scause=15` with `stval=0x40000000`,
+confirms D is still clear, updates the PTE to add W, retries the store, and
+confirms D is finally set. A fresh quick profile passed in
 `logs/ci-quick-20260629-010333` from the GitHub worktree, and the retained
 `verify_ci.sh p1-trace-audit` profile over that logdir passed in
 `logs/ci-p1-trace-audit-20260629-010528` across 11 tests with 39,918 retired
 instructions, 12 traps, 5 AMOs, 5 PTE updates, and 15 privilege switches.
+For the current `wpfault` increment, the local directed, rvtests, trace, reftrace,
+and cache/stage portions of `quick` passed in
+`logs/ci-quick-20260629-wpfault/quick`; full local `quick` stopped only at
+`vtop_synth` because this machine does not have `verilator` or `oss-cad-suite`.
+The retained `verify_ci.sh p1-trace-audit` profile over those traces passed in
+`logs/ci-p1-trace-audit-20260629-wpfault` across 12 tests with 45,586 retired
+instructions, 14 traps, 5 AMOs, 7 PTE updates, 17 privilege switches, and 31/31
+coverage-floor checks.
 Hosted macOS GitHub Actions now runs both quick and the retained RVTRACE coverage
 audit. Run `28329835965` for commit `246bc30` passed `quick regression`; artifact
 summary `logs/github-quick-28329835965` reports quick `pass=6 fail=0`, and
@@ -800,14 +813,14 @@ latest CI evidence health, latest per-test RVTRACE coverage/floor-check status, 
 PnR Fmax range across runs. `tools/check_ci_dashboard.py` turns those retained
 artifacts into a cheap evidence-health gate: by default it requires parse-clean
 dashboard/history files, a passing streak, retained P0 Linux login evidence, retained
-PnR evidence at or above the 40 MHz target, retained RVTRACE coverage for 11 tests
-with at least 39,000 retired instructions, 12 traps, 5 AMOs, 5 PTE updates,
-15 privilege switches, and 27 passing per-test floor checks. The
-`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-010541`, writing
+PnR evidence at or above the 40 MHz target, retained RVTRACE coverage for 12 tests
+with at least 44,000 retired instructions, 14 traps, 5 AMOs, 7 PTE updates,
+17 privilege switches, and 31 passing per-test floor checks. The
+`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-wpfault`, writing
 `ci_health.json` / `ci_health.md` with 36/36 checks passing; negative checks also
 failed as intended for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`,
 `mxr:retired=6000`, `upage:retired=10000`, `ifault:retired=10000`, and
-`--min-rvtrace-tests 12`.
+`wpfault:pte_updates=3`, plus `--min-rvtrace-tests 13`.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -823,14 +836,14 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 22 summaries scanned, 22 retained history runs, a 22-run pass streak,
-profile counts of `evidence-health=6`, `p0-evidence=3`, `p1-trace-audit=9`, and
-`quick=4`, 7 RVTRACE coverage artifact runs, 6 CI evidence
+reports 12 summaries scanned, 12 retained history runs, a 2-run pass streak,
+profile counts of `evidence-health=3`, `p0-evidence=1`, `p1-trace-audit=5`, and
+`quick=3`, 5 RVTRACE coverage artifact runs, 3 CI evidence
 health runs, latest P0 Linux evidence from
 `logs/ci-p0-evidence-20260628-233213`, latest RVTRACE audit/coverage from
-`logs/ci-p1-trace-audit-20260629-003025`, latest CI evidence health from
-`logs/ci-evidence-health-20260629-003035`, and best PnR at **53.94 MHz** for the
-40 MHz target. The latest coverage table shows 27/27 floor checks passing:
+`logs/ci-p1-trace-audit-20260629-wpfault`, latest CI evidence health from
+`logs/ci-evidence-health-20260629-wpfault`, and best PnR at **53.94 MHz** for the
+40 MHz target. The latest coverage table shows 31/31 floor checks passing:
 `isa`/`amotest` cover the 5 AMOs, `mmu` covers the original PTE update and 3 traps,
 `utrap` covers the user trap plus 3 privilege switches, and `mprv` contributes
 5,452 retired instructions, 1 load page fault, and 1 additional PTE A-bit update;
@@ -838,7 +851,9 @@ health runs, latest P0 Linux evidence from
 1 additional PTE A-bit update; `upage` contributes 9,593 retired instructions,
 3 traps, 6 privilege switches, and 2 additional PTE A/D updates; `ifault`
 contributes 9,655 retired instructions, 2 traps, 2 privilege switches, and 0 PTE
-A/D updates on its non-executable target page.
+A/D updates on its non-executable target page; `wpfault` contributes 5,668 retired
+instructions, 2 traps, 2 privilege switches, and 2 PTE A/D updates while proving a
+read-only store fault leaves D clear.
 The scheduling layer is now wired for automation: `.github/workflows/ci.yml` runs
 the hosted macOS quick profile on push/PR/manual dispatch, `.github/workflows/nightly.yml`
 runs the longer profile on a self-hosted macOS runner at 01:00 Asia/Shanghai and
