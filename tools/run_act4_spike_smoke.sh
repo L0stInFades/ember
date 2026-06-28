@@ -99,9 +99,12 @@ selected_act_group_counts() {
 }
 
 ACT_GROUP_LIST=$(selected_act_groups)
+ACT_TEST_COUNT=$(set -- $TESTS; printf '%s\n' "$#")
+ACT_TEST_CSV=$(printf '%s\n' $TESTS | paste -sd, -)
 ACT_GROUP_COUNT=$(set -- $ACT_GROUP_LIST; printf '%s\n' "$#")
 ACT_GROUP_CSV=$(printf '%s\n' $ACT_GROUP_LIST | paste -sd, -)
 ACT_GROUP_COUNTS_CSV=$(selected_act_group_counts)
+echo "P1_ACT4_SPIKE_TESTS: count=$ACT_TEST_COUNT tests=$ACT_TEST_CSV"
 echo "P1_ACT4_SPIKE_GROUPS: count=$ACT_GROUP_COUNT groups=$ACT_GROUP_CSV"
 echo "P1_ACT4_SPIKE_GROUP_COUNTS: groups=$ACT_GROUP_COUNTS_CSV"
 

@@ -17,9 +17,11 @@ excluded because those upstream groups are tagged `MISALIGNED_LDST: true` and
 validate successful non-aligned load/store behavior; Ember currently implements
 precise misaligned-access traps instead.
 
-`tools/run_act4_spike_smoke.sh` emits `P1_ACT4_SPIKE_GROUPS` so retained summaries
-and the dashboard health gate can verify the exact default group composition, not
-just the total number of passing ACT/Spike tests.
+`tools/run_act4_spike_smoke.sh` emits `P1_ACT4_SPIKE_TESTS`,
+`P1_ACT4_SPIKE_GROUPS`, and `P1_ACT4_SPIKE_GROUP_COUNTS` so retained summaries
+and the dashboard health gate can verify the exact default selected test list,
+group composition, and per-group test counts, not just the total number of
+passing ACT/Spike tests.
 
 The upstream `Zicsr` tests use no-`C` MARCH metadata, but Ember decodes
 compressed instructions and advertises `misa.C`. The smoke therefore runs that

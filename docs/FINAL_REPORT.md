@@ -1230,6 +1230,14 @@ adding a dashboard-root fallback that resolves hosted artifact summaries by
 matching their internal `logdir` once they have fallen out of the recent-run
 table. A negative `--require-p1-act4-spike-group-counts` with `Zca=25` fails
 against the retained `Zca=26` count.
+The same ACT/Spike path now retains the exact selected 106-test list as
+`test_names`, not only the total, group list, and per-group counts. The smoke
+script emits `P1_ACT4_SPIKE_TESTS`, metrics can infer the list from retained
+`ACT4_SPIKE_TEST` lines, dashboard top-level JSON and history trend data retain
+it, and local `logs/ci-evidence-health-20260629-act4-test-list` passes 98/98
+checks. An intentionally equal-length `--require-p1-act4-spike-test-list` with
+the final `ZihintntlZca` test name replaced fails in the latest summary,
+dashboard, and history checks.
 Hosted CI run `28339985935` for source commit `b55bf85` passed with quick
 regression in 1m37s and P1 external in 8m49s. Its downloaded P1 artifact
 `github-p1-external-28339985935/summary.json` is `status=pass`, retains the same

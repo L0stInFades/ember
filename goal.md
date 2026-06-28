@@ -172,8 +172,8 @@ artifacts, P0 Linux login evidence with a default 9B-cycle ceiling, exact P1
 external test composition across summary/dashboard/history artifacts, 39 P1
 external per-test floors, exact ACT/Spike group counts, 40 MHz PnR evidence,
 RVTRACE aggregate counts, and 48 RVTRACE per-test coverage-floor checks. The
-current dashboard in this worktree scans 82 summaries, retains 82 history
-records, has a 13-run pass streak, and tracks the latest P0 Linux evidence with
+current dashboard in this worktree scans 83 summaries, retains 83 history
+records, has a 14-run pass streak, and tracks the latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, latest retained RVTRACE audit/coverage,
 latest CI evidence health, best PnR Fmax, profile counts, floor-check status,
 latest run per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
@@ -546,6 +546,16 @@ nested GitHub downloads remain checkable after they leave the recent-run table.
 Local `logs/ci-evidence-health-20260629-act4-group-counts-v2` passes 95/95
 checks; a negative `--require-p1-act4-spike-group-counts` with `Zca=25` fails
 against the retained `Zca=26` count.
+The same ACT/Spike evidence chain now retains and checks the exact selected
+106-test list as `test_names`, not only total/group/group-count coverage.
+`tools/run_act4_spike_smoke.sh` emits `P1_ACT4_SPIKE_TESTS`,
+`tools/collect_ci_metrics.py` can also infer the list from retained
+`ACT4_SPIKE_TEST` lines, and `tools/render_ci_dashboard.py` preserves the list in
+dashboard top-level JSON and history trend data. Local
+`logs/ci-evidence-health-20260629-act4-test-list` passes 98/98 checks; an
+intentionally equal-length `--require-p1-act4-spike-test-list` with the final
+`ZihintntlZca` test name replaced fails in the latest summary, dashboard, and
+history checks.
 Hosted CI run `28339985935` for source commit `b55bf85` passed with quick
 regression in 1m37s and P1 external in 8m49s. Downloaded artifact
 `github-p1-external-28339985935/summary.json` is `status=pass`, retains the same

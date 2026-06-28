@@ -197,6 +197,12 @@ def p1_external_test_names(item):
     return [test.get("test") for test in item.get("tests", []) if test.get("test")]
 
 
+def act4_spike_test_names(item):
+    if not item:
+        return []
+    return [test for test in item.get("test_names", []) if test]
+
+
 def act4_spike_record(item):
     if not item:
         return None
@@ -205,6 +211,7 @@ def act4_spike_record(item):
         "tests": item.get("tests"),
         "passed": item.get("passed"),
         "failed": item.get("failed"),
+        "test_names": item.get("test_names", []),
         "group_count": item.get("group_count"),
         "groups": item.get("groups", []),
         "group_tests": item.get("group_tests", []),
@@ -298,9 +305,11 @@ def trend_summary(records):
     pnr_records = [record for record in records if record.get("pnr") and record["pnr"].get("fmax_mhz") is not None]
     pnr_values = [record["pnr"].get("fmax_mhz", 0) for record in pnr_records]
     p1_external_records = [record for record in records if record.get("p1_external")]
+    act4_spike_records = [record for record in records if record.get("act4_spike")]
     latest_failure = next((record for record in newest if record.get("status") != "pass"), None)
     latest_pnr = next((record for record in newest if record.get("pnr")), None)
     latest_p1_external = next((record for record in newest if record.get("p1_external")), None)
+    latest_act4_spike = next((record for record in newest if record.get("act4_spike")), None)
     p0_linux_login_records = [
         record
         for record in records
@@ -352,6 +361,16 @@ def trend_summary(records):
             "latest_tests": p1_external_test_names(latest_p1),
         }
 
+    act4_spike = None
+    if latest_act4_spike:
+        latest_act4 = latest_act4_spike.get("act4_spike") or {}
+        act4_spike = {
+            "runs": len(act4_spike_records),
+            "latest_logdir": latest_act4_spike.get("logdir"),
+            "latest_test_count": latest_act4.get("tests"),
+            "latest_tests": act4_spike_test_names(latest_act4),
+        }
+
     return {
         "runs": len(records),
         "profile_counts": dict(sorted(profile_counts.items())),
@@ -368,7 +387,8 @@ def trend_summary(records):
         "p0_linux_login_cycles": p0_linux_login_cycles,
         "p1_external_runs": len(p1_external_records),
         "p1_external": p1_external,
-        "act4_spike_runs": sum(1 for record in records if record.get("act4_spike")),
+        "act4_spike_runs": len(act4_spike_records),
+        "act4_spike": act4_spike,
         "rvtrace_runs": sum(1 for record in records if record.get("rvtrace")),
         "rvtrace_coverage_runs": sum(1 for record in records if record.get("rvtrace_coverage")),
         "ci_health_runs": sum(1 for record in records if record.get("ci_health")),
@@ -562,6 +582,7 @@ def main():
         "latest_p1_external": latest_p1_external.get("logdir") if latest_p1_external else None,
         "latest_p1_external_tests": p1_external_test_names(latest_item(latest_p1_external, "p1_external")) if latest_p1_external else [],
         "latest_act4_spike": latest_act4_spike.get("logdir") if latest_act4_spike else None,
+        "latest_act4_spike_tests": act4_spike_test_names(latest_item(latest_act4_spike, "act4_spike")) if latest_act4_spike else [],
         "latest_rvtrace": latest_trace.get("logdir") if latest_trace else None,
         "latest_rvtrace_coverage": latest_coverage.get("logdir") if latest_coverage else None,
         "latest_ci_health": latest_health.get("logdir") if latest_health else None,
@@ -613,6 +634,7 @@ def main():
         f"- latest P1 external evidence: `{dashboard['latest_p1_external'] or 'none'}`",
         f"- latest P1 external tests: `{','.join(dashboard['latest_p1_external_tests']) or 'none'}`",
         f"- latest ACT/Spike smoke: `{dashboard['latest_act4_spike'] or 'none'}`",
+        f"- latest ACT/Spike tests: `{','.join(dashboard['latest_act4_spike_tests']) or 'none'}`",
         f"- latest RVTRACE audit: `{dashboard['latest_rvtrace'] or 'none'}`",
         f"- latest RVTRACE coverage: `{dashboard['latest_rvtrace_coverage'] or 'none'}`",
         f"- latest CI evidence health: `{dashboard['latest_ci_health'] or 'none'}`",

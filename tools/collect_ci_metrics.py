@@ -22,6 +22,7 @@ SPIKE_PREFIX_RE = re.compile(
     r"last_pc=(?P<last_pc>0x[0-9a-fA-F]+)(?P<rest>.*)"
 )
 P1_EXTERNAL_RE = re.compile(r"P1_EXTERNAL: PASS logdir=(?P<logdir>.+)")
+ACT4_SPIKE_TESTS_RE = re.compile(r"P1_ACT4_SPIKE_TESTS: count=(?P<count>\d+) tests=(?P<tests>\S*)")
 ACT4_SPIKE_GROUPS_RE = re.compile(r"P1_ACT4_SPIKE_GROUPS: count=(?P<count>\d+) groups=(?P<groups>\S*)")
 ACT4_SPIKE_GROUP_COUNTS_RE = re.compile(r"P1_ACT4_SPIKE_GROUP_COUNTS: groups=(?P<groups>\S*)")
 ACT4_SPIKE_TEST_RE = re.compile(r"ACT4_SPIKE_TEST: PASS test=(?P<test>\S+) logdir=(?P<logdir>.+)")
@@ -104,10 +105,15 @@ def parse_log(path):
 
     spike_entries = []
     current_spike_test = None
+    current_act4_test_names = None
     current_act4_groups = None
     current_act4_group_tests = None
     current_act4_passed_tests = []
     for line in text.splitlines():
+        match = ACT4_SPIKE_TESTS_RE.search(line)
+        if match:
+            current_act4_test_names = [test for test in match.group("tests").split(",") if test]
+            continue
         match = ACT4_SPIKE_GROUPS_RE.search(line)
         if match:
             groups = [group for group in match.group("groups").split(",") if group]
@@ -136,9 +142,13 @@ def parse_log(path):
             if current_act4_groups:
                 item.update(current_act4_groups)
                 current_act4_groups = None
+            test_names = current_act4_test_names or current_act4_passed_tests
+            if test_names:
+                item["test_names"] = test_names
             group_tests = current_act4_group_tests or act4_group_counts_from_tests(current_act4_passed_tests)
             if group_tests:
                 item["group_tests"] = group_tests
+            current_act4_test_names = None
             current_act4_group_tests = None
             current_act4_passed_tests = []
             metrics["act4_spike"].append(item)
@@ -362,6 +372,7 @@ def main():
     if summary["act4_spike"]:
         lines += ["", "## ACT/Spike Smoke"]
         for item in summary["act4_spike"]:
+            test_names_text = ",".join(item.get("test_names", [])) or "-"
             groups_text = ",".join(item.get("groups", [])) or "-"
             group_tests_text = ",".join(
                 f"{group.get('group')}={group.get('tests')}"
@@ -370,9 +381,10 @@ def main():
             ) or "-"
             lines.append(
                 "- status={status} tests={tests} passed={passed} failed={failed} groups={groups_text} "
-                "group_tests={group_tests_text} source=`{source}`".format(
+                "group_tests={group_tests_text} test_names={test_names_text} source=`{source}`".format(
                     groups_text=groups_text,
                     group_tests_text=group_tests_text,
+                    test_names_text=test_names_text,
                     **item,
                 )
             )

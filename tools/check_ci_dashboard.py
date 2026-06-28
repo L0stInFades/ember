@@ -36,6 +36,115 @@ DEFAULT_P1_ACT4_SPIKE_GROUP_COUNTS = {
     "ZihintntlZca": 4,
 }
 
+DEFAULT_P1_ACT4_SPIKE_TESTS = [
+    "I/I-add-00",
+    "I/I-addi-00",
+    "I/I-and-00",
+    "I/I-andi-00",
+    "I/I-auipc-00",
+    "I/I-beq-00",
+    "I/I-bge-00",
+    "I/I-bgeu-00",
+    "I/I-blt-00",
+    "I/I-bltu-00",
+    "I/I-bne-00",
+    "I/I-fence-00",
+    "I/I-jal-00",
+    "I/I-jalr-00",
+    "I/I-lb-00",
+    "I/I-lbu-00",
+    "I/I-lh-00",
+    "I/I-lhu-00",
+    "I/I-lui-00",
+    "I/I-lw-00",
+    "I/I-nop-00",
+    "I/I-or-00",
+    "I/I-ori-00",
+    "I/I-sb-00",
+    "I/I-sh-00",
+    "I/I-sll-00",
+    "I/I-slli-00",
+    "I/I-slt-00",
+    "I/I-slti-00",
+    "I/I-sltiu-00",
+    "I/I-sltu-00",
+    "I/I-sra-00",
+    "I/I-srai-00",
+    "I/I-srl-00",
+    "I/I-srli-00",
+    "I/I-sub-00",
+    "I/I-sw-00",
+    "I/I-xor-00",
+    "I/I-xori-00",
+    "M/M-div-00",
+    "M/M-divu-00",
+    "M/M-mul-00",
+    "M/M-mulh-00",
+    "M/M-mulhsu-00",
+    "M/M-mulhu-00",
+    "M/M-rem-00",
+    "M/M-remu-00",
+    "Zmmul/Zmmul-mul-00",
+    "Zmmul/Zmmul-mulh-00",
+    "Zmmul/Zmmul-mulhsu-00",
+    "Zmmul/Zmmul-mulhu-00",
+    "Zaamo/Zaamo-amoadd.w-00",
+    "Zaamo/Zaamo-amoand.w-00",
+    "Zaamo/Zaamo-amomax.w-00",
+    "Zaamo/Zaamo-amomaxu.w-00",
+    "Zaamo/Zaamo-amomin.w-00",
+    "Zaamo/Zaamo-amominu.w-00",
+    "Zaamo/Zaamo-amoor.w-00",
+    "Zaamo/Zaamo-amoswap.w-00",
+    "Zaamo/Zaamo-amoxor.w-00",
+    "Zalrsc/Zalrsc-lr.w-00",
+    "Zalrsc/Zalrsc-sc.w-00",
+    "Zca/Zca-c.add-00",
+    "Zca/Zca-c.addi-00",
+    "Zca/Zca-c.addi16sp-00",
+    "Zca/Zca-c.addi4spn-00",
+    "Zca/Zca-c.and-00",
+    "Zca/Zca-c.andi-00",
+    "Zca/Zca-c.beqz-00",
+    "Zca/Zca-c.bnez-00",
+    "Zca/Zca-c.j-00",
+    "Zca/Zca-c.jal-00",
+    "Zca/Zca-c.jalr-00",
+    "Zca/Zca-c.jr-00",
+    "Zca/Zca-c.li-00",
+    "Zca/Zca-c.lui-00",
+    "Zca/Zca-c.lw-00",
+    "Zca/Zca-c.lwsp-00",
+    "Zca/Zca-c.mv-00",
+    "Zca/Zca-c.nop-00",
+    "Zca/Zca-c.or-00",
+    "Zca/Zca-c.slli-00",
+    "Zca/Zca-c.srai-00",
+    "Zca/Zca-c.srli-00",
+    "Zca/Zca-c.sub-00",
+    "Zca/Zca-c.sw-00",
+    "Zca/Zca-c.swsp-00",
+    "Zca/Zca-c.xor-00",
+    "Zicsr/Zicsr-csrrc-00",
+    "Zicsr/Zicsr-csrrci-00",
+    "Zicsr/Zicsr-csrrs-00",
+    "Zicsr/Zicsr-csrrsi-00",
+    "Zicsr/Zicsr-csrrw-00",
+    "Zicsr/Zicsr-csrrwi-00",
+    "Zicntr/Zicntr-csrrc-00",
+    "Zicntr/Zicntr-csrrs-00",
+    "Zifencei/Zifencei-fence.i-00",
+    "Zihintpause/Zihintpause-pause-00",
+    "Zihintntl/Zihintntl-ntl.all-00",
+    "Zihintntl/Zihintntl-ntl.p1-00",
+    "Zihintntl/Zihintntl-ntl.pall-00",
+    "Zihintntl/Zihintntl-ntl.s1-00",
+    "ZihintntlZca/ZihintntlZca-c.ntl.all-00",
+    "ZihintntlZca/ZihintntlZca-c.ntl.p1-00",
+    "ZihintntlZca/ZihintntlZca-c.ntl.pall-00",
+    "ZihintntlZca/ZihintntlZca-c.ntl.s1-00",
+]
+
 DEFAULT_P1_EXTERNAL_TESTS = [
     "isa",
     "amotest",
@@ -302,6 +411,11 @@ def main():
         help="semicolon-separated per-test minimum P1 external fields, e.g. test:ret=1,trap_exceptions=1; empty disables",
     )
     ap.add_argument("--min-p1-act4-spike-tests", type=int, default=106)
+    ap.add_argument(
+        "--require-p1-act4-spike-test-list",
+        default=",".join(DEFAULT_P1_ACT4_SPIKE_TESTS),
+        help="comma-separated exact ACT/Spike test list required for the latest P1 evidence; empty disables",
+    )
     ap.add_argument(
         "--require-p1-act4-spike-groups",
         default=",".join(DEFAULT_P1_ACT4_SPIKE_GROUPS),
@@ -576,6 +690,46 @@ def main():
                 f"passed={latest_act4.get('passed', 0)} tests={latest_act4.get('tests', 0)}",
                 p1_source,
             )
+            required_act4_tests = [
+                test.strip()
+                for test in args.require_p1_act4_spike_test_list.split(",")
+                if test.strip()
+            ]
+            if required_act4_tests:
+                actual_act4_tests = latest_act4.get("test_names") or []
+                add_check(
+                    checks,
+                    "P1 ACT/Spike smoke test list",
+                    actual_act4_tests == required_act4_tests,
+                    "tests={actual} required={required}".format(
+                        actual=",".join(actual_act4_tests) or "missing",
+                        required=",".join(required_act4_tests),
+                    ),
+                    p1_source,
+                )
+                dashboard_act4_tests = dashboard.get("latest_act4_spike_tests") or []
+                add_check(
+                    checks,
+                    "P1 ACT/Spike dashboard test list",
+                    dashboard_act4_tests == required_act4_tests,
+                    "tests={actual} required={required}".format(
+                        actual=",".join(dashboard_act4_tests) or "missing",
+                        required=",".join(required_act4_tests),
+                    ),
+                    str(dashboard_path),
+                )
+                history_act4 = history.get("act4_spike") if isinstance(history.get("act4_spike"), dict) else {}
+                history_act4_tests = history_act4.get("latest_tests") or []
+                add_check(
+                    checks,
+                    "P1 ACT/Spike history test list",
+                    history_act4_tests == required_act4_tests,
+                    "tests={actual} required={required}".format(
+                        actual=",".join(history_act4_tests) or "missing",
+                        required=",".join(required_act4_tests),
+                    ),
+                    str(history_path),
+                )
             required_act4_groups = [
                 group.strip()
                 for group in args.require_p1_act4_spike_groups.split(",")
