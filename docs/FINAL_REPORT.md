@@ -956,6 +956,12 @@ Spike commits, and 1 terminal-trap comparison. The follow-up
 and negative checks for `--min-p1-external-runs 3`,
 `--min-p1-external-tests 9`, and `--min-p1-external-terminal-traps 2` failed as
 intended.
+The pushed source commit `8fe3078` passed hosted macOS quick CI as run
+`28333520885`: `logs/github-quick-28333520885` reports quick `pass=1 fail=0`
+with `verify.sh` `pass=6 fail=0`, and
+`logs/github-p1-trace-audit-28333520885` reports 17 tests, 71,682 retired
+instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and 48/48
+floor checks.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on

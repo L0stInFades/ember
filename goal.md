@@ -296,6 +296,10 @@ comparison; `logs/ci-evidence-health-20260629-p1-external-v2` passes 42/42
 checks. Negative checks for `--min-p1-external-runs 3`,
 `--min-p1-external-tests 9`, and `--min-p1-external-terminal-traps 2` fail as
 expected.
+The pushed source commit `8fe3078` passed hosted macOS quick CI as run
+`28333520885`: quick `pass=1 fail=0`, `verify.sh` `pass=6 fail=0`, and retained
+RVTRACE audit totals of 17 tests, 71,682 retired instructions, 27 traps, 6 AMOs,
+12 PTE updates, 25 privilege switches, and 48/48 floor checks.
 
 ---
 
