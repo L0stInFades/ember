@@ -203,7 +203,10 @@ dirty A/D PTE updates are visible to later reads, and an unmapped S-mode load re
 load page-fault cause 13. The regression also checks that PTW reads of dirty PTEs do
 not hit backing memory, cached load/fetch hits avoid extra backing reads, and
 store-check sets A/D while leaving the target data word unchanged, and load translate-only
-sets A without touching the target data word.
+sets A without touching the target data word. It now also remaps a hot Sv32 VA to a
+second leaf PTE, proves stale DTLB and ITLB entries continue using the old PA until a
+`tlb_flush`, then proves the flush forces a fresh walk to the new PA and performs the
+expected A-bit update.
 
 ## Multi-cycle rvlinux fetch stage: `rvlinux_fetch_stage.v`
 `rvlinux_fetch_stage.v` is the first core-side stall controller split out of the
@@ -685,7 +688,11 @@ performance baseline after CSR-completion fetch. It caches successful Sv32 leaf 
 for instruction fetches separately from data/translate-only accesses, refilters hits
 against current privilege/SUM/MXR/A/D permissions, fills after PTW or A/D writeback,
 and flushes on `sfence.vma` and `satp` writes from the core shell. Directed memory
-boundary tests now assert that repeated fetch/load translations skip a second PTW.
+boundary tests now assert that repeated fetch/load translations skip a second PTW,
+that stale DTLB/ITLB entries keep using the old PA after a same-VA PTE remap until
+flush, and that `tlb_flush` makes the next load/fetch observe the new PA. The local
+Icarus regression passed with `MEM_BOUNDARY_RESULT: PASS` in
+`logs/ci-mem-boundary-tlb-remap-20260629/tb_rvlinux_mem_boundary.log`.
 In the same 400 MHz/default-tick full-payload 5B-cycle run, there is still no panic,
 Oops, BUG, or warning, and the run still does not reach login, but the milestones move
 substantially earlier and stdout progresses beyond the old `kyber` stopping point:
@@ -874,7 +881,7 @@ dashboard/history files, a passing streak, retained P0 Linux login evidence, ret
 PnR evidence at or above the 40 MHz target, retained RVTRACE coverage for 16 tests
 with at least 70,000 retired instructions, 25 traps, 6 AMOs, 12 PTE updates,
 25 privilege switches, and 46 passing per-test floor checks. The
-`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-amo-mmu`, writing
+`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-tlb-remap`, writing
 `ci_health.json` / `ci_health.md` with 36/36 checks passing; negative checks also
 failed as intended for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`,
 `mxr:retired=6000`, `upage:retired=10000`, `ifault:retired=10000`, and
@@ -895,13 +902,13 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 26 summaries scanned, 26 retained history runs, a 2-run pass streak,
-profile counts of `evidence-health=8`, `p0-evidence=1`, `p1-trace-audit=10`, and
-`quick=7`, 10 RVTRACE coverage artifact runs, 8 CI evidence
+reports 27 summaries scanned, 27 retained history runs, a 3-run pass streak,
+profile counts of `evidence-health=9`, `p0-evidence=1`, `p1-trace-audit=10`, and
+`quick=7`, 10 RVTRACE coverage artifact runs, 9 CI evidence
 health runs, latest P0 Linux evidence from
 `logs/ci-p0-evidence-20260628-233213`, latest RVTRACE audit/coverage from
 `logs/ci-p1-trace-audit-20260629-amo-mmu`, latest CI evidence health from
-`logs/ci-evidence-health-20260629-amo-mmu`, and best PnR at **53.94 MHz** for the
+`logs/ci-evidence-health-20260629-tlb-remap`, and best PnR at **53.94 MHz** for the
 40 MHz target. The latest coverage table shows 46/46 floor checks passing:
 `isa`/`amotest` plus `amo_mmu` cover the 6 AMOs, `mmu` covers the original PTE
 update and 3 traps,

@@ -68,8 +68,10 @@ module tb_rvlinux_mem_boundary;
     localparam [31:0] VA_OK       = 32'h0040_F254;
     localparam [31:0] VA_BAD      = 32'h0080_0000;
     localparam [31:0] DATA_PA     = 32'h0003_0254;
+    localparam [31:0] DATA_PA2    = 32'h0003_1254;
     localparam [31:0] ROOT_PTE    = (32'h0000_0002 << 10) | 32'h001;
     localparam [31:0] LEAF_PTE    = (32'h0000_0030 << 10) | 32'h00F; // V/R/W/X, A/D clear
+    localparam [31:0] LEAF_PTE2   = (32'h0000_0031 << 10) | 32'h00F; // same VA remapped
 
     always @(posedge clk) begin
         cyc <= cyc + 1;
@@ -228,6 +230,45 @@ module tb_rvlinux_mem_boundary;
         memop(ACC_LOAD, 32'd0, PRV_M, DATA_PA, 32'd0, 4'hF,
               cap_rdata, cap_fault, cap_cause, cap_pa);
         chk(cap_rdata == 32'h1234_5678, "load_translate_does_not_read_or_write_data");
+        memop(ACC_FETCH, SATP_ROOT, PRV_S, VA_OK, 32'd0, 4'h0,
+              cap_rdata, cap_fault, cap_cause, cap_pa);
+        chk(!cap_fault && cap_pa == DATA_PA, "remap_refill_old_itlb");
+        chk(cap_rdata == refv(DATA_PA), "remap_refill_old_itlb_fetch_data");
+
+        memop(ACC_STORE, 32'd0, PRV_M, DATA_PA, 32'h0BAD_F00D, 4'hF,
+              cap_rdata, cap_fault, cap_cause, cap_pa);
+        chk(!cap_fault && cap_pa == DATA_PA, "remap_old_pa_seed");
+        memop(ACC_STORE, 32'd0, PRV_M, DATA_PA2, 32'h600D_CAFE, 4'hF,
+              cap_rdata, cap_fault, cap_cause, cap_pa);
+        chk(!cap_fault && cap_pa == DATA_PA2, "remap_new_pa_seed");
+        memop(ACC_STORE, 32'd0, PRV_M, LEAF_PTE_PA, LEAF_PTE2, 4'hF,
+              cap_rdata, cap_fault, cap_cause, cap_pa);
+        chk(!cap_fault, "remap_leaf_without_flush");
+
+        ptw_starts_before = ptw_starts;
+        memop(ACC_LOAD, SATP_ROOT, PRV_S, VA_OK, 32'd0, 4'hF,
+              cap_rdata, cap_fault, cap_cause, cap_pa);
+        chk(!cap_fault && cap_pa == DATA_PA, "stale_dtlb_uses_old_pa_without_flush");
+        chk(cap_rdata == 32'h0BAD_F00D, "stale_dtlb_load_reads_old_pa");
+        memop(ACC_FETCH, SATP_ROOT, PRV_S, VA_OK, 32'd0, 4'h0,
+              cap_rdata, cap_fault, cap_cause, cap_pa);
+        chk(!cap_fault && cap_pa == DATA_PA, "stale_itlb_uses_old_pa_without_flush");
+        chk(cap_rdata == refv(DATA_PA), "stale_itlb_fetch_reads_old_pa");
+        chk(ptw_starts == ptw_starts_before, "stale_tlb_no_ptw_before_flush");
+
+        flush_tlb();
+        memop(ACC_LOAD, SATP_ROOT, PRV_S, VA_OK, 32'd0, 4'hF,
+              cap_rdata, cap_fault, cap_cause, cap_pa);
+        chk(!cap_fault && cap_pa == DATA_PA2, "flush_dtlb_sees_remapped_pa");
+        chk(cap_rdata == 32'h600D_CAFE, "flush_dtlb_load_reads_new_pa");
+        chk(ad_writes == 5, "flush_remap_load_sets_accessed");
+        memop(ACC_FETCH, SATP_ROOT, PRV_S, VA_OK, 32'd0, 4'h0,
+              cap_rdata, cap_fault, cap_cause, cap_pa);
+        chk(!cap_fault && cap_pa == DATA_PA2, "flush_itlb_sees_remapped_pa");
+        chk(cap_rdata == refv(DATA_PA2), "flush_itlb_fetch_reads_new_pa");
+        memop(ACC_LOAD, 32'd0, PRV_M, LEAF_PTE_PA, 32'd0, 4'hF,
+              cap_rdata, cap_fault, cap_cause, cap_pa);
+        chk(cap_rdata == (LEAF_PTE2 | 32'h0000_0040), "remap_leaf_pte_a_visible");
 
         memop(ACC_LOAD, SATP_ROOT, PRV_S, VA_BAD, 32'd0, 4'hF,
               cap_rdata, cap_fault, cap_cause, cap_pa);
