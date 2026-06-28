@@ -309,6 +309,8 @@ class RV32IMARef:
                 next_pc = u32(pc + imm_b)
         elif opc == 0x03:  # LOAD
             addr = u32(rv1 + imm_i)
+            if self._load_misaligned(f3, addr):
+                return self._take_exception(pc, instr, 4, addr)
             d_access = self._translate_data(addr, "load")
             if d_access["fault"]:
                 return self._take_exception(pc, instr, 13, addr)
@@ -316,6 +318,8 @@ class RV32IMARef:
             wb_val = self._load(f3, d_access["pa"])
         elif opc == 0x23:  # STORE
             addr = u32(rv1 + imm_s)
+            if self._store_misaligned(f3, addr):
+                return self._take_exception(pc, instr, 6, addr)
             d_access = self._translate_data(addr, "store")
             if d_access["fault"]:
                 return self._take_exception(pc, instr, 15, addr)
@@ -334,6 +338,8 @@ class RV32IMARef:
         elif opc == 0x2F:  # A extension
             wb_en = True
             amo_kind = "load" if ((instr >> 27) & 0x1F) == 0b00010 else "store"
+            if rv1 & 0x3:
+                return self._take_exception(pc, instr, 4 if amo_kind == "load" else 6, rv1)
             d_access = self._translate_data(rv1, amo_kind)
             if d_access["fault"]:
                 return self._take_exception(pc, instr, 13 if amo_kind == "load" else 15, rv1)
@@ -522,6 +528,15 @@ class RV32IMARef:
             return self.mem.load_u16(addr)
         raise RefError(f"illegal load funct3={f3}")
 
+    def _load_misaligned(self, f3, addr):
+        if f3 in (0, 4):
+            return False
+        if f3 in (1, 5):
+            return bool(addr & 0x1)
+        if f3 == 2:
+            return bool(addr & 0x3)
+        return False
+
     def _store(self, f3, addr, value):
         if f3 == 0:
             return self.mem.store(addr, value, 1)
@@ -530,6 +545,15 @@ class RV32IMARef:
         if f3 == 2:
             return self.mem.store(addr, value, 4)
         raise RefError(f"illegal store funct3={f3}")
+
+    def _store_misaligned(self, f3, addr):
+        if f3 == 0:
+            return False
+        if f3 == 1:
+            return bool(addr & 0x1)
+        if f3 == 2:
+            return bool(addr & 0x3)
+        return False
 
     def _system(self, instr, pc, rd, rs1, f3, rv1):
         csr_addr = (instr >> 20) & 0xFFF

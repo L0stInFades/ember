@@ -16,6 +16,7 @@ DEFAULT_TESTS = [
     "ctest",
     "shtest",
     "mtest",
+    "misalign",
     "utrap",
     "mprv",
     "mxr",
@@ -29,6 +30,7 @@ DEFAULT_TESTS = [
 ]
 TRAP_ALLOWED = {
     "mmu",
+    "misalign",
     "utrap",
     "mprv",
     "mxr",
@@ -40,7 +42,7 @@ TRAP_ALLOWED = {
     "superpage",
     "amo_mmu",
 }
-EXPECT_M_PRIV = {"isa", "amotest", "ctest", "shtest", "mtest"}
+EXPECT_M_PRIV = {"isa", "amotest", "ctest", "shtest", "mtest", "misalign"}
 DEFAULT_COVERAGE_FLOORS = {
     "isa": {"retired": 600, "amos": 3},
     "amotest": {"retired": 450, "amos": 2},
@@ -48,6 +50,7 @@ DEFAULT_COVERAGE_FLOORS = {
     "ctest": {"retired": 2000},
     "shtest": {"retired": 200},
     "mtest": {"retired": 200},
+    "misalign": {"retired": 400, "traps": 2},
     "utrap": {"retired": 150, "traps": 1, "priv_switches": 3},
     "mprv": {"retired": 5000, "traps": 1, "pte_updates": 1},
     "mxr": {"retired": 5000, "traps": 2, "pte_updates": 1},

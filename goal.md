@@ -112,8 +112,8 @@ path scriptable local-CI/nightly profiles (`quick`, `pr`, `p0-smoke`, `p0-audit`
 combined retained Linux+PnR evidence audit, retained RVTRACE/ref-model audit,
 retained dashboard/history health audit, and reused P0 smoke profile all pass. The
 P1 trace audit rechecks retained `rvtrace_*.csv` with both
-structural and reference-model checkers and currently covers 16 tests, 71,237
-retired instructions, 25 traps, 6 AMOs, 12 PTE updates, and 25 privilege switches.
+structural and reference-model checkers and currently covers 17 tests, 71,682
+retired instructions, 27 traps, 6 AMOs, 12 PTE updates, and 25 privilege switches.
 The added `mprv` directed trace covers MPRV+SUM data permissions: a user-page load
 through `MPRV=1, MPP=S` succeeds with `SUM=1`, then faults with `SUM=0` and records
 `mcause=13`, `mtval=0x40000000`, and the pre-trap MPRV bit.
@@ -150,6 +150,10 @@ unchanged.
 The added `amo_mmu` directed trace covers LR/SC/AMO under Sv32 permissions:
 LR on a read-only page sets A only, SC faults without D while the page is
 read-only, then successful SC and AMOADD on a writable page set D and update memory.
+The added `misalign` directed trace covers M-mode misaligned LW/SW traps:
+the misaligned load raises cause 4 with `mtval=&g_word+1` and leaves the
+destination register unchanged, while the misaligned store raises cause 6 with
+`mtval=&g_word+2` and leaves the backing word unchanged.
 `tools/collect_ci_metrics.py` now emits per-run `summary.json` and `summary.md`
 artifacts from `verify_ci.sh` logs, covering CI pass/fail, retained RVTRACE
 coverage, CI evidence health, P0 Linux gate status, and PnR Fmax/resource metrics;
@@ -164,8 +168,8 @@ enforces default per-test coverage floors so those signals cannot silently move 
 of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
 artifacts, P0 Linux login evidence, 40 MHz PnR evidence, RVTRACE aggregate counts,
-and 46 per-test coverage-floor checks. The current dashboard in this worktree
-scans 28 summaries, retains 28 history records, has a 4-run pass streak, and tracks the latest P0 Linux
+and 48 per-test coverage-floor checks. The current dashboard in this worktree
+scans 31 summaries, retains 31 history records, has a 2-run pass streak, and tracks the latest P0 Linux
 evidence, latest retained RVTRACE audit/coverage, latest CI evidence health, best
 PnR Fmax, profile counts, floor-check status, latest run per profile, and recent
 runs. `verify_ci.sh` refreshes this dashboard and trend history after every profile,
@@ -226,7 +230,17 @@ retained RVTRACE audit/coverage over those traces passes in
 `logs/ci-p1-trace-audit-20260629-amo-mmu` with 16 tests, 71,237 retired
 instructions, 25 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and 46/46
 floor checks; the local retained evidence-health gate passes in
-`logs/ci-evidence-health-20260629-amo-mmu` with 36/36 checks. The hosted macOS
+`logs/ci-evidence-health-20260629-amo-mmu` with 36/36 checks.
+For the current `misalign` increment, the standalone directed run
+`LOG=/tmp/tb_misalign.log bash tests/build_run.sh misalign` passes, and local
+directed tests, rvtests, RVTRACE structural checks, RVTRACE reference-model
+checks, and cache/stage smokes pass in `logs/ci-quick-20260629-misalign/quick`;
+full local `quick` still stops only at `vtop_synth` because this machine has no
+`verilator`. The retained RVTRACE audit/coverage over those traces passes in
+`logs/ci-p1-trace-audit-20260629-misalign` with 17 tests, 71,682 retired
+instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and 48/48
+floor checks; the local retained evidence-health gate passes in
+`logs/ci-evidence-health-20260629-misalign` with 36/36 checks. The hosted macOS
 GitHub quick CI now runs both quick and
 retained RVTRACE coverage audit: run `28332215063` on commit `914d8c2` completed
 `quick regression` successfully, with `logs/github-quick-28332215063` reporting
@@ -247,7 +261,8 @@ directory is absent. Negative
 checks for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`, `mxr:retired=6000`,
 `upage:retired=10000`, `ifault:retired=10000`, `wpfault:pte_updates=3`, and
 `sum:pte_updates=3`, `badpte:traps=4`, `superpage:traps=4`,
-`amo_mmu:pte_updates=4`, plus `--min-rvtrace-tests 17` fail as expected. The remaining P0/P1 work is observing the first real self-hosted
+`amo_mmu:pte_updates=4`, `misalign:traps=3`, plus `--min-rvtrace-tests 18` fail
+as expected. The remaining P0/P1 work is observing the first real self-hosted
 scheduled/nightly green run, broader coverage beyond directed trace/ref-model tests,
 populating the retained trend history from real remote CI/cron runs, and default
 integration. The behavioral single-cycle path is no longer the only login path, but
