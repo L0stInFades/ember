@@ -43,15 +43,24 @@ jobs:
           LOGDIR: logs/github-quick-${{ github.run_id }}
         run: ./verify_ci.sh quick
 
+      - name: Run retained RVTRACE audit
+        env:
+          LOGDIR: logs/github-p1-trace-audit-${{ github.run_id }}
+          P1_TRACE_LOGDIR: logs/github-quick-${{ github.run_id }}/quick
+        run: ./verify_ci.sh p1-trace-audit
+
       - name: Publish regression summary
         if: always()
         run: |
-          summary="logs/github-quick-${GITHUB_RUN_ID}/summary.md"
-          if [ -f "$summary" ]; then
-            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          for summary in \
+            "logs/github-quick-${GITHUB_RUN_ID}/summary.md" \
+            "logs/github-p1-trace-audit-${GITHUB_RUN_ID}/summary.md"; do
+            if [ -f "$summary" ]; then
+              cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+              printf '\n' >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
           if [ -f logs/ci-dashboard.md ]; then
-            printf '\n' >> "$GITHUB_STEP_SUMMARY"
             cat logs/ci-dashboard.md >> "$GITHUB_STEP_SUMMARY"
           fi
 
