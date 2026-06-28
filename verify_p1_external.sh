@@ -181,7 +181,7 @@ PY
   fi
 
   if [ "${P1_SKIP_SPIKE_SV32_PREFIX:-0}" != "1" ]; then
-    tests=${P1_SPIKE_SV32_PREFIX_TESTS:-"mxr upage ifault wpfault sum badpte superpage amo_mmu"}
+    tests=${P1_SPIKE_SV32_PREFIX_TESTS:-"mprv mxr upage ifault wpfault sum badpte superpage amo_mmu"}
     for t in $tests; do
       echo "=== spike-prefix $t ==="
       rm -f rvtrace.log "$LOGDIR/rvtrace_${t}.csv"

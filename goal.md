@@ -289,7 +289,7 @@ The retained metrics path now treats P1 external as first-class health evidence:
 `tools/collect_ci_metrics.py` parses `SPIKE_TRACE_PREFIX` and `P1_EXTERNAL`
 summaries, `tools/render_ci_dashboard.py` records latest/trend P1 external runs,
 and `tools/check_ci_dashboard.py` requires at least one retained P1 external run
-with 16 tests and one terminal trap by default. A fresh `./verify_ci.sh p1` passes
+with 17 tests and one terminal trap by default. A fresh `./verify_ci.sh p1` passes
 in `logs/ci-p1-20260629-p1-external` with 8 external tests, 9,167 compared
 retired rows, 3 compared trap rows, 9,167 Spike commits, and 1 terminal-trap
 comparison; `logs/ci-evidence-health-20260629-p1-external-v2` passes 42/42
@@ -328,6 +328,19 @@ updates, 25 privilege switches, and 48/48 floor checks, plus the hosted
 `P1 external Spike gate` summary with 16 external tests, 65,219 compared retired
 rows, 23 compared trap rows, 77,632 Spike commits, and 1 terminal-trap
 comparison.
+The remaining `mprv` directed test is now Spike-comparable too: `tests/mprv.c`
+sets `menvcfgh.ADUE` before enabling `satp`, matching the other Sv32 permission
+tests and Spike/Svadu's hardware A/D update mode. `verify_p1_external.sh` now
+includes `mprv` in the dynamic syscon-stop SV32 prefix set, and
+`tools/check_ci_dashboard.py` raises the default P1 external floor to all 17
+directed tests. `logs/ci-p1-20260629-p1-external-mprv-v2` passes with 17
+external tests, 70,670 compared retired rows, 24 compared trap rows, 85,628
+Spike commits, and 1 terminal-trap comparison. `logs/ci-evidence-health-20260629-p1-external-mprv-v2`
+passes 42/42 checks; negative checks for `--min-p1-external-tests 18` and
+`--min-p1-external-terminal-traps 2` fail as expected. A local quick run also
+passes directed, rvtests, RVTRACE structural/ref-model, and cache checks for the
+ADUE-updated `mprv`; its only failure is the known local `vtop_synth`
+environment gap (`verilator` missing), which hosted CI covers.
 
 ---
 

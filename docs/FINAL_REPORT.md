@@ -95,14 +95,17 @@ regression:
   Spike comparison covers the 97 committed rows before the first misaligned load
   and matches the terminal exception against the DUT TRAP row (`cause=4`,
   `tval=0x8000146d` in the current build).
-- The external gate now also covers `mxr`, `upage`, `ifault`, `wpfault`, `sum`,
-  `badpte`, `superpage`, and `amo_mmu` with Spike `RV32IMA_Svadu`, a 4 MB memory
-  map, and a dynamic syscon report-store stop point. Those comparisons include
-  the directed permission/trap bodies before the final pass-store boundary.
+- The external gate now also covers `mprv`, `mxr`, `upage`, `ifault`,
+  `wpfault`, `sum`, `badpte`, `superpage`, and `amo_mmu` with Spike
+  `RV32IMA_Svadu`, a 4 MB memory map, and a dynamic syscon report-store stop
+  point. Those comparisons include the directed permission/trap bodies before
+  the final pass-store boundary. The `mprv` test explicitly sets
+  `menvcfgh.ADUE`, matching the other Sv32 permission tests and Spike/Svadu's
+  hardware A/D update mode.
 - The metrics/dashboard layer now retains this external P1 evidence: `p1`
   profile summaries include external test count, compared retired rows, Spike
   commit count, and terminal-trap coverage, and evidence-health requires at least
-  one retained P1 external run with 16 tests and one terminal trap.
+  one retained P1 external run with 17 tests and one terminal trap.
 - This is a Spike prefix gate, not full RVVI. RISCOF DUT/reference plugins,
   complete Spike comparison after the final `mmu`/`utrap` `ecall` trap and after
   terminal misaligned exceptions, device-complete comparison, and full Spike/RVVI
@@ -939,7 +942,7 @@ coverage/floor-check status, and PnR Fmax range across runs.
 `tools/check_ci_dashboard.py` turns those retained
 artifacts into a cheap evidence-health gate: by default it requires parse-clean
 dashboard/history files, a passing streak, retained P0 Linux login evidence,
-retained P1 external Spike-prefix evidence for 16 tests with at least one terminal
+retained P1 external Spike-prefix evidence for 17 tests with at least one terminal
 trap, retained PnR evidence at or above the 40 MHz target, retained RVTRACE
 coverage for 17 tests with at least 71,000 retired instructions, 27 traps, 6
 AMOs, 12 PTE updates, 25 privilege switches, and 48 passing per-test floor
@@ -993,6 +996,18 @@ and 48/48 floor checks; and `logs/github-p1-external-28334099355` reports the
 expanded `p1` profile passing with 16 external tests, 65,219 compared retired
 rows, 23 compared trap rows, 77,632 Spike commits, and 1 terminal-trap
 comparison.
+The remaining `mprv` Spike mismatch was traced to the test not enabling
+`menvcfgh.ADUE`, while Spike/Svadu requires that bit for hardware A/D updates.
+After adding the same ADUE setup used by the other Sv32 directed tests,
+`logs/ci-p1-20260629-p1-external-mprv-v2` passed with 17 external tests, 70,670
+compared retired rows, 24 compared trap rows, 85,628 Spike commits, and 1
+terminal-trap comparison. `logs/ci-evidence-health-20260629-p1-external-mprv-v2`
+then passed with 42/42 checks under the new default 17-test P1 external floor;
+negative checks for `--min-p1-external-tests 18` and
+`--min-p1-external-terminal-traps 2` failed as intended. The local quick profile
+also passed directed, rvtests, RVTRACE structural/ref-model, and cache checks
+for the ADUE-updated `mprv`; only `vtop_synth` failed locally because this host
+does not have `verilator` installed.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -1008,14 +1023,14 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 46 summaries scanned, 46 retained history runs, a 17-run pass streak,
-profile counts of `evidence-health=14`, `p0-evidence=1`, `p1=4`,
-`p1-trace-audit=15`, and `quick=12`, 4 P1 external evidence runs, 15 RVTRACE
-coverage artifact runs, 14 CI evidence health runs, latest P0 Linux evidence from
+reports 54 summaries scanned, 54 retained history runs, a 2-run pass streak,
+profile counts of `evidence-health=16`, `p0-evidence=1`, `p1=7`,
+`p1-trace-audit=16`, and `quick=14`, 7 P1 external evidence runs, 16 RVTRACE
+coverage artifact runs, 16 CI evidence health runs, latest P0 Linux evidence from
 `logs/ci-p0-evidence-20260628-233213`, latest P1 external evidence from
-`logs/ci-p1-20260629-p1-external-sv32`, latest RVTRACE audit/coverage from
-`logs/github-p1-trace-audit-28333671496`, latest CI evidence health from
-`logs/ci-evidence-health-20260629-p1-external-sv32`, and best PnR at **53.94 MHz**
+`logs/ci-p1-20260629-p1-external-mprv-v2`, latest RVTRACE audit/coverage from
+`logs/github-p1-trace-audit-28334099355`, latest CI evidence health from
+`logs/ci-evidence-health-20260629-p1-external-mprv-v2`, and best PnR at **53.94 MHz**
 for the 40 MHz target. The latest coverage table shows 48/48 floor checks passing:
 `isa`/`amotest` plus `amo_mmu` cover the 6 AMOs, `mmu` covers the original PTE
 update and 3 traps,

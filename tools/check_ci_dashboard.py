@@ -100,7 +100,7 @@ def main():
     ap.add_argument("--min-pass-streak", type=int, default=1)
     ap.add_argument("--min-p0-linux-runs", type=int, default=1)
     ap.add_argument("--min-p1-external-runs", type=int, default=1)
-    ap.add_argument("--min-p1-external-tests", type=int, default=16)
+    ap.add_argument("--min-p1-external-tests", type=int, default=17)
     ap.add_argument("--min-p1-external-terminal-traps", type=int, default=1)
     ap.add_argument("--min-rvtrace-runs", type=int, default=1)
     ap.add_argument("--min-rvtrace-coverage-runs", type=int, default=1)

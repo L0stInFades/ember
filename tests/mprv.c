@@ -8,6 +8,7 @@
 #define PU 16
 #define PA_ 64
 #define PD 128
+#define MENVCFGH_ADUE (1u << 29)
 #define MSTATUS_MPP_S (1u << 11)
 #define MSTATUS_MPRV  (1u << 17)
 #define MSTATUS_SUM   (1u << 18)
@@ -58,6 +59,7 @@ int main(void){
   *(volatile u32*)0x80202000 = 0x13572468;
 
   csrw("mtvec",(u32)m_trap);
+  csrw("0x31a",MENVCFGH_ADUE);                       // match Spike/Svadu hardware A/D update mode
   csrw("satp",(1u<<31)|0x80200u);
   __asm__ volatile("sfence.vma"::: "memory");
 
