@@ -759,6 +759,7 @@ must remain in `upage`, instruction page-fault coverage must remain in `ifault`,
 write-permission-fault plus A/D side-effect coverage must remain in `wpfault`,
 S-mode SUM user-page permission coverage must remain in `sum`,
 reserved invalid-PTE encoding coverage must remain in `badpte`,
+misaligned level-1 Sv32 superpage coverage must remain in `superpage`,
 and every directed trace must keep a minimum
 retired-instruction floor. `tests/mprv.c` lifts the existing
 MPRV/SUM data-privilege smoke into the default directed/trace/reftrace baseline:
@@ -790,6 +791,14 @@ both fault, proving A/D remain clear, and proving the backing physical word was 
 modified by the faulting store. `tools/rvtrace_ref.py` now preserves the leaf PA
 for valid-looking invalid leaf PTE faults so its trap-row instruction field matches
 the DUT RVTRACE stream while still reporting a fault and no A/D update.
+`tests/superpage.c` covers the Sv32 level-1 superpage alignment rule: a root-level
+leaf with nonzero PPN0 is valid-looking and has R/W/X set, but S-mode store and
+instruction fetch both take page faults, the PTE A/D bits remain clear, and the
+backing physical return instruction remains unchanged. The combinational
+`rvlinux.v` walker, the sequential `sv32_ptw.v` walker, and `tools/rvtrace_ref.py`
+now all reject that misaligned-superpage encoding. `tools/check_rvtrace.py` also
+skips image-base instruction lookup for cause-12 fetch-fault rows, leaving exact
+fetch-fault semantics to the reference trace checker.
 A fresh quick profile passed in
 `logs/ci-quick-20260629-010333` from the GitHub worktree, and the retained
 `verify_ci.sh p1-trace-audit` profile over that logdir passed in
@@ -818,6 +827,14 @@ The retained `verify_ci.sh p1-trace-audit` profile over those traces passed in
 `logs/ci-p1-trace-audit-20260629-badpte` across 14 tests with 61,346 retired
 instructions, 20 traps, 5 AMOs, 9 PTE updates, 21 privilege switches, and 38/38
 coverage-floor checks.
+For the current `superpage` increment, the local directed, rvtests, trace,
+reftrace, and cache/stage portions of `quick` passed in
+`logs/ci-quick-20260629-superpage/quick`; full local `quick` stopped only at
+`vtop_synth` because this machine does not have `verilator` or `oss-cad-suite`.
+The retained `verify_ci.sh p1-trace-audit` profile over those traces passed in
+`logs/ci-p1-trace-audit-20260629-superpage-v2` across 15 tests with 65,270 retired
+instructions, 23 traps, 5 AMOs, 9 PTE updates, 23 privilege switches, and 41/41
+coverage-floor checks.
 Hosted macOS GitHub Actions now runs both quick and the retained RVTRACE coverage
 audit. Run `28330936655` for commit `b302fd6` passed `quick regression`; artifact
 summary `logs/github-quick-28330936655` reports quick `pass=1 fail=0`, and
@@ -839,15 +856,15 @@ latest CI evidence health, latest per-test RVTRACE coverage/floor-check status, 
 PnR Fmax range across runs. `tools/check_ci_dashboard.py` turns those retained
 artifacts into a cheap evidence-health gate: by default it requires parse-clean
 dashboard/history files, a passing streak, retained P0 Linux login evidence, retained
-PnR evidence at or above the 40 MHz target, retained RVTRACE coverage for 14 tests
-with at least 56,000 retired instructions, 20 traps, 5 AMOs, 9 PTE updates,
-21 privilege switches, and 38 passing per-test floor checks. The
-`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-badpte`, writing
+PnR evidence at or above the 40 MHz target, retained RVTRACE coverage for 15 tests
+with at least 60,000 retired instructions, 23 traps, 5 AMOs, 9 PTE updates,
+23 privilege switches, and 41 passing per-test floor checks. The
+`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-superpage-v2`, writing
 `ci_health.json` / `ci_health.md` with 36/36 checks passing; negative checks also
 failed as intended for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`,
 `mxr:retired=6000`, `upage:retired=10000`, `ifault:retired=10000`, and
-`wpfault:pte_updates=3`, `sum:pte_updates=3`, `badpte:traps=4`, plus
-`--min-rvtrace-tests 15`.
+`wpfault:pte_updates=3`, `sum:pte_updates=3`, `badpte:traps=4`,
+`superpage:traps=4`, plus `--min-rvtrace-tests 16`.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -863,14 +880,14 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 18 summaries scanned, 18 retained history runs, a 2-run pass streak,
-profile counts of `evidence-health=5`, `p0-evidence=1`, `p1-trace-audit=7`, and
-`quick=5`, 7 RVTRACE coverage artifact runs, 5 CI evidence
+reports 23 summaries scanned, 23 retained history runs, a 4-run pass streak,
+profile counts of `evidence-health=7`, `p0-evidence=1`, `p1-trace-audit=9`, and
+`quick=6`, 9 RVTRACE coverage artifact runs, 7 CI evidence
 health runs, latest P0 Linux evidence from
 `logs/ci-p0-evidence-20260628-233213`, latest RVTRACE audit/coverage from
-`logs/ci-p1-trace-audit-20260629-badpte`, latest CI evidence health from
-`logs/ci-evidence-health-20260629-badpte`, and best PnR at **53.94 MHz** for the
-40 MHz target. The latest coverage table shows 38/38 floor checks passing:
+`logs/ci-p1-trace-audit-20260629-superpage-v2`, latest CI evidence health from
+`logs/ci-evidence-health-20260629-superpage-v2`, and best PnR at **53.94 MHz** for the
+40 MHz target. The latest coverage table shows 41/41 floor checks passing:
 `isa`/`amotest` cover the 5 AMOs, `mmu` covers the original PTE update and 3 traps,
 `utrap` covers the user trap plus 3 privilege switches, and `mprv` contributes
 5,452 retired instructions, 1 load page fault, and 1 additional PTE A-bit update;
@@ -884,7 +901,9 @@ read-only store fault leaves D clear; `sum` contributes 5,808 retired instructio
 3 traps, 2 privilege switches, and 2 PTE A/D updates while proving `SUM=0` faults
 leave A/D clear; `badpte` contributes 9,952 retired instructions, 3 traps, 2
 privilege switches, and 0 PTE A/D updates while proving the reserved `R=0/W=1`
-encoding faults for store and fetch.
+encoding faults for store and fetch; `superpage` contributes 3,924 retired
+instructions, 3 traps, 2 privilege switches, and 0 PTE A/D updates while proving a
+level-1 leaf with nonzero PPN0 faults for store and fetch.
 The scheduling layer is now wired for automation: `.github/workflows/ci.yml` runs
 the hosted macOS quick profile on push/PR/manual dispatch, `.github/workflows/nightly.yml`
 runs the longer profile on a self-hosted macOS runner at 01:00 Asia/Shanghai and

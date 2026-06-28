@@ -407,6 +407,8 @@ class RV32IMARef:
             leaf = pte1
             leaf_pa = pte1_pa
             pa = u32((((pte1 >> 20) & 0x3FF) << 22) | (va & 0x3FFFFF))
+            if self._misaligned_superpage(pte1):
+                return self._xlate_fault(pa, leaf_pa, leaf)
         else:
             pte0_pa = u32(((pte1 >> 10) & 0xFFFFF) << 12)
             pte0_pa = u32(pte0_pa + vpn0 * 4)
@@ -458,6 +460,9 @@ class RV32IMARef:
 
     def _pte_leaf(self, pte):
         return bool(get_bit(pte, 1) or get_bit(pte, 3))
+
+    def _misaligned_superpage(self, pte):
+        return ((pte >> 10) & 0x3FF) != 0
 
     def _pte_perm(self, pte, kind, eff_priv):
         readable = get_bit(pte, 1) or (get_bit(self.csrs[0x300], MXR_B) and get_bit(pte, 3))

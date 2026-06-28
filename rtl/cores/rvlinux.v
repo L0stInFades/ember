@@ -278,7 +278,9 @@ module rvlinux #(
     // permission: need X; U-page in S/M fetch not allowed
     wire f_perm = f_leaf[3] &&
                   ( (priv==PRV_U) ? f_leaf[4] : !f_leaf[4] );
+    wire f_pte1_sp_misaligned = f_pte1_leaf && (f_pte1[19:10] != 10'd0);
     wire f_walk_bad = !f_pte1_v || (f_pte1[1]==0 && f_pte1[2]==1) ||
+                      f_pte1_sp_misaligned ||
                       (!f_pte1_leaf && (!f_pte0[0] || (f_pte0[1]==0 && f_pte0[2]==1) || !(f_pte0[3]|f_pte0[1])));
     wire f_fault = f_xen && ( !in_ram(f_pte1_pa) || f_walk_bad || !f_perm );
 
@@ -296,7 +298,9 @@ module rvlinux #(
                         f2_pte1_leaf ? {f2_pte1[29:20], f2_va[21:0]} :
                                        {f2_pte0[29:10], f2_va[11:0]};
     wire f2_perm = f2_leaf[3] && ((priv==PRV_U) ? f2_leaf[4] : !f2_leaf[4]);
+    wire f2_pte1_sp_misaligned = f2_pte1_leaf && (f2_pte1[19:10] != 10'd0);
     wire f2_walk_bad = !f2_pte1[0] || (f2_pte1[1]==0 && f2_pte1[2]==1) ||
+                       f2_pte1_sp_misaligned ||
                        (!f2_pte1_leaf && (!f2_pte0[0] || (f2_pte0[1]==0 && f2_pte0[2]==1) || !(f2_pte0[3]|f2_pte0[1])));
     wire f2_fault = f_xen && ( !in_ram(f2_pte1_pa) || f2_walk_bad || !f2_perm );
 
@@ -324,7 +328,9 @@ module rvlinux #(
                                     d_leaf[2] ) &&
                   ( (d_effpriv==PRV_U) ? d_leaf[4]
                                        : (!d_leaf[4] | mstatus[SUM_B]) );
+    wire d_pte1_sp_misaligned = d_pte1_leaf && (d_pte1[19:10] != 10'd0);
     wire d_walk_bad = !d_pte1_v || (d_pte1[1]==0 && d_pte1[2]==1) ||
+                      d_pte1_sp_misaligned ||
                       (!d_pte1_leaf && (!d_pte0[0] || (d_pte0[1]==0 && d_pte0[2]==1) || !(d_pte0[3]|d_pte0[1])));
     wire d_fault = d_xen && ( !in_ram(d_pte1_pa) || d_walk_bad || !d_perm );
 

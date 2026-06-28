@@ -142,7 +142,7 @@ def main():
             if raw32 is None:
                 if skip == "compressed":
                     skipped_compressed += 1
-                else:
+                elif not (event == "TRAP" and cause == 12):
                     fail(errors, f"line {row_count}: cannot fetch instruction at pc 0x{pc:08x}: {skip}")
             elif raw32 != instr:
                 fail(

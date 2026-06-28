@@ -83,6 +83,13 @@ module sv32_ptw #(
         end
     endfunction
 
+    function is_misaligned_superpage;
+        input [31:0] pte;
+        begin
+            is_misaligned_superpage = pte[19:10] != 10'd0;
+        end
+    endfunction
+
     function perm_ok;
         input [31:0] pte;
         input [1:0]  acc;
@@ -221,7 +228,8 @@ module sv32_ptw #(
                     if (is_bad_pte(m_rdata)) begin
                         finish_fault();
                     end else if (is_leaf_pte(m_rdata)) begin
-                        if (!perm_ok(m_rdata, access_r, priv_r, sum_r, mxr_r))
+                        if (is_misaligned_superpage(m_rdata) ||
+                            !perm_ok(m_rdata, access_r, priv_r, sum_r, mxr_r))
                             finish_fault();
                         else
                             finish_leaf(m_rdata, pte1_pa_r, 1'b1);

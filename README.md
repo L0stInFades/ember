@@ -68,9 +68,9 @@ Prerequisites: a RISC-V `clang`/`lld` (e.g. Homebrew LLVM) for the C tests, and
 [`oss-cad-suite`](https://github.com/YosysHQ/oss-cad-suite-build) (Verilator,
 iverilog, yosys, nextpnr) on your `PATH` or unpacked at `./oss-cad-suite`.
 
-Run the directed tests (all should print `RESULT: PASS`):
+Run the default directed, rvtests, RVTRACE, reference-trace, and cache regression:
 ```sh
-for t in isa amotest mmu ctest shtest mtest utrap; do bash tests/build_run.sh $t; done
+./verify.sh
 ```
 
 Exercise the cache (correctness + hit-rate/AMAT measurement):
