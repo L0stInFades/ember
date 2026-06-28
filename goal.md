@@ -356,6 +356,13 @@ compared trap rows, 23 ordinary trap-exception checks, 85,628 Spike commits, and
 1 terminal-trap comparison. `logs/ci-evidence-health-20260629-trap-exceptions`
 passes 43/43 checks under the new default 23-trap-exception floor; a negative
 `--min-p1-external-trap-exceptions 24` check fails as expected.
+The pushed source commit `762922a` passed hosted macOS CI as run `28334858340`:
+quick `pass=1 fail=0`, `verify.sh` `pass=6 fail=0`, retained RVTRACE audit
+totals of 17 tests, 71,683 retired instructions, 27 traps, 6 AMOs, 12 PTE
+updates, 25 privilege switches, and 48/48 floor checks, plus the hosted
+`P1 external Spike gate` summary with all 17 external tests, 70,670 compared
+retired rows, 24 compared trap rows, 23 non-terminal trap-exception checks,
+85,628 Spike commits, and 1 terminal-trap comparison.
 
 ---
 

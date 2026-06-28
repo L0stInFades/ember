@@ -1032,6 +1032,14 @@ summary reports 70,670 compared retired rows, 24 compared trap rows, 23
 under the new default 23-trap-exception floor, and
 `python3 tools/check_ci_dashboard.py --min-p1-external-trap-exceptions 24`
 fails as intended against the retained value of 23.
+Source commit `762922a` then passed hosted macOS CI as run `28334858340`:
+`logs/github-quick-28334858340` reports quick `pass=1 fail=0` with `verify.sh`
+`pass=6 fail=0`; `logs/github-p1-trace-audit-28334858340` reports 17 tests,
+71,683 retired instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege
+switches, and 48/48 floor checks; and `logs/github-p1-external-28334858340`
+reports all 17 external tests, 70,670 compared retired rows, 24 compared trap
+rows, 23 non-terminal trap-exception checks, 85,628 Spike commits, and 1
+terminal-trap comparison.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
