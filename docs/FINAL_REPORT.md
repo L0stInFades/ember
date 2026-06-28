@@ -1170,6 +1170,11 @@ The P0 retained evidence path now records boot-to-login cycles too:
 passes 52/52 checks including the default 9B-cycle ceiling. A negative
 `--max-p0-linux-login-cycles 8000000000` check fails as intended against the
 retained 8,716,611,501-cycle login point.
+Source commit `f06b828` then passed hosted macOS CI as run `28338812276`:
+quick `pass=1 fail=0`, and `logs/github-p1-external-28338812276` records 17
+Spike-prefix tests (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus 106/106 ACT/Spike tests with `group_count=12` and the
+expected group CSV.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on

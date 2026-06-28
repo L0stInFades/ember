@@ -487,6 +487,11 @@ metrics/dashboard/trend pipeline retains `cycles=8716611501` for
 new default `--max-p0-linux-login-cycles 9000000000` guard. A negative check at
 8,000,000,000 cycles fails as expected against the retained 8,716,611,501-cycle
 login evidence.
+The pushed source commit `f06b828` passed hosted macOS CI as run `28338812276`:
+quick `pass=1 fail=0`, and hosted P1 external
+`logs/github-p1-external-28338812276` still records 17 Spike-prefix tests
+(`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus 106/106
+ACT/Spike tests with `group_count=12` and the expected group CSV.
 
 ---
 
