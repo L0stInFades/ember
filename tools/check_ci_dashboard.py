@@ -41,6 +41,79 @@ DEFAULT_P1_EXTERNAL_TESTS = [
     "amo_mmu",
 ]
 
+DEFAULT_P1_EXTERNAL_TEST_FLOORS = {
+    "isa": {"ret": 600},
+    "amotest": {"ret": 450},
+    "ctest": {"ret": 2000},
+    "shtest": {"ret": 200},
+    "mtest": {"ret": 200},
+    "mmu": {"ret": 5000, "traps": 2, "trap_exceptions": 2},
+    "utrap": {"ret": 40},
+    "misalign": {"ret": 90, "traps": 1, "terminal_trap": 1},
+    "mprv": {"ret": 5000, "traps": 1, "trap_exceptions": 1},
+    "mxr": {"ret": 5000, "traps": 2, "trap_exceptions": 2},
+    "upage": {"ret": 9000, "traps": 3, "trap_exceptions": 3},
+    "ifault": {"ret": 9000, "traps": 2, "trap_exceptions": 2},
+    "wpfault": {"ret": 5000, "traps": 2, "trap_exceptions": 2},
+    "sum": {"ret": 5500, "traps": 3, "trap_exceptions": 3},
+    "badpte": {"ret": 9000, "traps": 3, "trap_exceptions": 3},
+    "superpage": {"ret": 3500, "traps": 3, "trap_exceptions": 3},
+    "amo_mmu": {"ret": 5500, "traps": 2, "trap_exceptions": 2},
+}
+
+P1_EXTERNAL_TEST_FLOOR_FIELDS = {"rows", "ret", "traps", "trap_exceptions", "spike_commits", "terminal_trap"}
+
+
+def format_p1_external_test_floors(floors):
+    chunks = []
+    for test, fields in floors.items():
+        rules = ",".join(f"{field}={value}" for field, value in fields.items())
+        chunks.append(f"{test}:{rules}")
+    return ";".join(chunks)
+
+
+def parse_p1_external_test_floors(text):
+    floors = {}
+    if not text.strip():
+        return floors
+    for chunk in text.split(";"):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        if ":" not in chunk:
+            raise SystemExit(f"invalid P1 external test floor {chunk!r}: expected test:field=value,...")
+        test, rules_text = chunk.split(":", 1)
+        test = test.strip()
+        if not test:
+            raise SystemExit(f"invalid P1 external test floor {chunk!r}: empty test name")
+        fields = {}
+        for rule in rules_text.split(","):
+            rule = rule.strip()
+            if not rule:
+                continue
+            if "=" not in rule:
+                raise SystemExit(f"invalid P1 external test floor {chunk!r}: expected field=value")
+            field, value_text = rule.split("=", 1)
+            field = field.strip()
+            if field not in P1_EXTERNAL_TEST_FLOOR_FIELDS:
+                raise SystemExit(
+                    f"invalid P1 external test floor field {field!r}; "
+                    f"valid fields: {','.join(sorted(P1_EXTERNAL_TEST_FLOOR_FIELDS))}"
+                )
+            try:
+                fields[field] = int(value_text.strip(), 0)
+            except ValueError as exc:
+                raise SystemExit(f"invalid P1 external test floor value {value_text!r} for {test}:{field}") from exc
+        if fields:
+            floors[test] = fields
+    return floors
+
+
+def p1_external_test_field(item, field):
+    if field == "terminal_trap":
+        return int(bool(item.get(field)))
+    return int(item.get(field, 0))
+
 
 def load_json(path):
     try:
@@ -153,6 +226,11 @@ def main():
         "--require-p1-external-tests",
         default=",".join(DEFAULT_P1_EXTERNAL_TESTS),
         help="comma-separated exact P1 external Spike-prefix test list required for the latest P1 evidence; empty disables",
+    )
+    ap.add_argument(
+        "--require-p1-external-test-floors",
+        default=format_p1_external_test_floors(DEFAULT_P1_EXTERNAL_TEST_FLOORS),
+        help="semicolon-separated per-test minimum P1 external fields, e.g. test:ret=1,trap_exceptions=1; empty disables",
     )
     ap.add_argument("--min-p1-act4-spike-tests", type=int, default=106)
     ap.add_argument(
@@ -361,6 +439,26 @@ def main():
                     ),
                     str(history_path),
                 )
+            p1_floor_rules = parse_p1_external_test_floors(args.require_p1_external_test_floors)
+            if p1_floor_rules:
+                tests_by_name = {
+                    item.get("test"): item
+                    for item in latest_p1.get("tests", [])
+                    if item.get("test")
+                }
+                for test, fields in p1_floor_rules.items():
+                    item = tests_by_name.get(test)
+                    if not item:
+                        add_check(checks, f"P1 external {test} floor source", False, "missing test", p1_source)
+                        continue
+                    for field, minimum in fields.items():
+                        check_min(
+                            checks,
+                            f"P1 external {test} {field}",
+                            p1_external_test_field(item, field),
+                            minimum,
+                            evidence=p1_source,
+                        )
             check_min(
                 checks,
                 "P1 external trap exceptions",

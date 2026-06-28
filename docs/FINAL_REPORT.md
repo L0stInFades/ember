@@ -132,8 +132,9 @@ regression:
   retained P1 external run with the exact 17-test list
   (`isa,amotest,ctest,shtest,mtest,mmu,utrap,misalign,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`),
   checks the same list from summary/dashboard/history artifacts, requires 23
-  ordinary trap-exception checks, one terminal trap, 106 ACT/Spike smoke tests,
-  and the exact default group list (`I,M,Zmmul,Zaamo,Zalrsc,Zca,Zicsr,Zicntr,Zifencei,Zihintpause,Zihintntl,ZihintntlZca`).
+  ordinary trap-exception checks, one terminal trap, 39 P1 external per-test
+  floors, 106 ACT/Spike smoke tests, and the exact default group list
+  (`I,M,Zmmul,Zaamo,Zalrsc,Zca,Zicsr,Zicntr,Zifencei,Zihintpause,Zihintntl,ZihintntlZca`).
 - The P0 Linux evidence path now retains the synth-shell boot-to-login cycle
   point. `verify_p0_linux.sh` emits `P0_LINUX_BOOT`, summaries/dashboard/trend
   carry `cycles=8716611501`, and evidence-health requires the latest retained
@@ -1204,6 +1205,13 @@ same exact 17-test list in `summary.json`, `ci-dashboard.json`,
 `ci-dashboard.md`, and `ci-trend.md`, with `ret=70670`,
 `trap_exceptions=23`, `terminal_traps=1`, and 106/106 ACT/Spike tests across
 the expected 12 groups.
+The P1 external evidence-health gate now adds per-test floors for the retained
+Spike-prefix evidence: base directed tests keep minimum retired rows, Sv32
+permission tests keep their expected trap/trap-exception counts, and `misalign`
+must remain the terminal-trap test. Local
+`logs/ci-evidence-health-20260629-p1-per-test-floors` passes 94/94 checks; a
+negative `--require-p1-external-test-floors amo_mmu:ret=6000` check fails
+against the retained `amo_mmu` value of 5,965 retired rows.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on

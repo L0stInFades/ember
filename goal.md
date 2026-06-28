@@ -169,10 +169,11 @@ enforces default per-test coverage floors so those signals cannot silently move 
 of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
 artifacts, P0 Linux login evidence with a default 9B-cycle ceiling, exact P1
-external test composition across summary/dashboard/history artifacts, 40 MHz PnR
-evidence, RVTRACE aggregate counts, and 48 per-test coverage-floor checks. The
-current dashboard in this worktree scans 79 summaries, retains 79 history
-records, has a 10-run pass streak, and tracks the latest P0 Linux evidence with
+external test composition across summary/dashboard/history artifacts, 39 P1
+external per-test floors, 40 MHz PnR evidence, RVTRACE aggregate counts, and 48
+RVTRACE per-test coverage-floor checks. The
+current dashboard in this worktree scans 80 summaries, retains 80 history
+records, has an 11-run pass streak, and tracks the latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, latest retained RVTRACE audit/coverage,
 latest CI evidence health, best PnR Fmax, profile counts, floor-check status,
 latest run per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
@@ -521,6 +522,13 @@ quick `pass=1 fail=0`, and hosted P1 external
 `summary.json`, `ci-dashboard.json`, `ci-dashboard.md`, and `ci-trend.md`, with
 `ret=70670`, `trap_exceptions=23`, `terminal_traps=1`, and 106/106 ACT/Spike
 tests across the expected 12 groups.
+The P1 external health gate now also checks per-test floors over the retained
+Spike-prefix evidence: base no-trap tests retain minimum retired rows, Sv32
+permission tests retain their expected trap/trap-exception counts, and `misalign`
+is required to remain the terminal-trap test. Local
+`logs/ci-evidence-health-20260629-p1-per-test-floors` passes 94/94 checks, and a
+negative `--require-p1-external-test-floors amo_mmu:ret=6000` check fails against
+the retained `amo_mmu` value of 5,965 retired rows.
 
 ---
 
