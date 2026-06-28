@@ -10,7 +10,8 @@ LOGDIR=${LOGDIR:-logs/p1-act4-spike-$(date +%Y%m%d-%H%M%S)}
 ARCH_TEST=${P1_ARCH_TEST_DIR:-"$ROOT/.p1/riscv-arch-test"}
 CONFIG_DIR=${P1_ACT4_CONFIG_DIR:-"$ROOT/p1/act4/ember-rv32i"}
 TESTS=${P1_ACT4_TESTS:-}
-ACT_GROUPS=${P1_ACT4_GROUPS:-"I M Zaamo Zalrsc Zca Zifencei"}
+ACT_GROUPS=${P1_ACT4_GROUPS:-"I M Zaamo Zalrsc Zca Zicsr Zifencei"}
+ZICSR_MARCH=${P1_ACT4_ZICSR_MARCH:-rv32i_zicsr_zifencei_zca}
 MAXCYC=${P1_ACT4_MAXCYC:-1500000}
 SPIKE_INSNS=${P1_ACT4_SPIKE_INSNS:-2000000}
 
@@ -74,6 +75,20 @@ test_march() {
   awk '/^# MARCH:/{print $3; exit}' "$1"
 }
 
+effective_march() {
+  local test=$1
+  local march=$2
+  local group
+  group=${test%%/*}
+  if [ -n "${P1_ACT4_MARCH:-}" ]; then
+    printf '%s\n' "$P1_ACT4_MARCH"
+  elif [ "$group" = "Zicsr" ]; then
+    printf '%s\n' "$ZICSR_MARCH"
+  else
+    printf '%s\n' "$march"
+  fi
+}
+
 process_signature() {
   PYTHONPATH="$ARCH_TEST/framework/src${PYTHONPATH:+:$PYTHONPATH}" \
     python3 - "$1" <<'PY'
@@ -119,6 +134,7 @@ run_one() {
   [ -f "$src" ] || { echo "missing ACT source: $src" >&2; return 1; }
   march=$(test_march "$src")
   [ -n "$march" ] || { echo "missing MARCH metadata: $src" >&2; return 1; }
+  march=$(effective_march "$test" "$march")
   mkdir -p "$tdir"
 
   if ! "${compile_common[@]}" -march="$march" -DSIGNATURE "$src" -o "$sig_elf" >"$tdir/compile_sig.log" 2>&1; then

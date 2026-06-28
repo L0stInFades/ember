@@ -223,7 +223,7 @@ class RV32IMARef:
             0x143: 0,  # stval
             0x180: 0,  # satp
             0x300: 0,  # mstatus
-            0x301: 0x40141101,  # misa: MXL=1, A/I/M/S/U
+            0x301: 0x40141105,  # misa: MXL=1, A/C/I/M/S/U
             0x302: 0,  # medeleg
             0x303: 0,  # mideleg
             0x304: 0,  # mie
@@ -715,9 +715,11 @@ class RV32IMARef:
             self.csrs[0x304] = u32((self.csrs[0x304] & ~self.csrs[0x303]) | (value & self.csrs[0x303]))
         elif addr == 0x144:
             self.csrs[0x344] = set_bit(self.csrs[0x344], 1, get_bit(value, 1))
-        elif addr in (0x105, 0x140, 0x141, 0x142, 0x143, 0x180,
+        elif addr in (0x141, 0x341):
+            self.csrs[addr] = value & ~1
+        elif addr in (0x105, 0x140, 0x142, 0x143, 0x180,
                       0x300, 0x302, 0x303, 0x304, 0x305,
-                      0x340, 0x341, 0x342, 0x343, 0x344):
+                      0x340, 0x342, 0x343, 0x344):
             self.csrs[addr] = value
         elif addr == 0x30A:
             self.csrs[addr] = 0

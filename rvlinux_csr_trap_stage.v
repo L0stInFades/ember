@@ -89,7 +89,7 @@ module rvlinux_csr_trap_stage(
     localparam MEI = 11;
 
     localparam [31:0] SSTATUS_MASK = 32'h800d_e722;
-    localparam [31:0] MISA_VALUE   = 32'h4014_1101;
+    localparam [31:0] MISA_VALUE   = 32'h4014_1105;
 
     reg [31:0] mstatus;
     reg [31:0] mtvec;
@@ -366,7 +366,7 @@ module rvlinux_csr_trap_stage(
                                         (csr_wval & mideleg);
                         12'h105: stvec <= csr_wval;
                         12'h140: sscratch <= csr_wval;
-                        12'h141: sepc <= csr_wval;
+                        12'h141: sepc <= csr_wval & 32'hffff_fffe;
                         12'h142: scause <= csr_wval;
                         12'h143: stval <= csr_wval;
                         12'h144: mip[SSI] <= csr_wval[SSI];
@@ -379,7 +379,7 @@ module rvlinux_csr_trap_stage(
                         12'h30a: menvcfg <= 32'd0;
                         12'h31a: menvcfgh <= csr_wval & 32'h2000_0000;
                         12'h340: mscratch <= csr_wval;
-                        12'h341: mepc <= csr_wval;
+                        12'h341: mepc <= csr_wval & 32'hffff_fffe;
                         12'h342: mcause <= csr_wval;
                         12'h343: mtval <= csr_wval;
                         12'h344: begin

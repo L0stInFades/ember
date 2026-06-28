@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 // ===========================================================================
-// rvlinux: single-cycle RV32IMA + Zicsr + M/S/U privilege + Sv32 MMU.
+// rvlinux: single-cycle RV32IMAC + Zicsr + M/S/U privilege + Sv32 MMU.
 //   Goal: boot real MMU Linux (buildroot qemu_riscv32_virt) on top of OpenSBI.
 //   - RV32I + M (behavioral mul/div for sim speed) + A (LR/SC + AMO*)
 //   - Three privilege modes (M=3, S=1, U=0)
@@ -239,7 +239,7 @@ module rvlinux #(
 
     initial begin
         mstatus=0; mtvec=0; mscratch=0; mepc=0; mcause=0; mtval=0; mie=0; mip=0;
-        medeleg=0; mideleg=0; menvcfg=0; menvcfgh=0; misa=32'h4014_1101; // MXL=1, A,I,M,S,U
+        medeleg=0; mideleg=0; menvcfg=0; menvcfgh=0; misa=32'h4014_1105; // MXL=1, A,C,I,M,S,U
         stvec=0; sscratch=0; sepc=0; scause=0; stval=0; satp=0;
         mtime=0; mtimecmp=64'hffff_ffff_ffff_ffff; mcycle=0; minstret=0;
         mtime_tick_count=0;
@@ -955,7 +955,7 @@ module rvlinux #(
                     12'h104: mie     <= (mie & ~mideleg) | (csr_wval & mideleg);
                     12'h105: stvec   <= csr_wval;
                     12'h140: sscratch<= csr_wval;
-                    12'h141: sepc    <= csr_wval;
+                    12'h141: sepc    <= csr_wval & 32'hffff_fffe;
                     12'h142: scause  <= csr_wval;
                     12'h143: stval   <= csr_wval;
                     12'h144: mip[SSI]<= csr_wval[SSI];
@@ -968,7 +968,7 @@ module rvlinux #(
                     12'h30a: menvcfg <= 32'd0;
                     12'h31a: menvcfgh<= csr_wval & 32'h2000_0000; // ADUE hint; DUT already updates A/D in HW
                     12'h340: mscratch<= csr_wval;
-                    12'h341: mepc    <= csr_wval;
+                    12'h341: mepc    <= csr_wval & 32'hffff_fffe;
                     12'h342: mcause  <= csr_wval;
                     12'h343: mtval   <= csr_wval;
                     12'h344: begin mip[SSI]<=csr_wval[SSI]; mip[STI]<=csr_wval[STI]; mip[SEI]<=csr_wval[SEI]; end

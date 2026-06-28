@@ -417,6 +417,26 @@ The pushed source commit `16f0b80` passed hosted macOS CI as run
 the hosted P1 external artifact `logs/github-p1-external-28336556293` records
 the same 17-test Spike-prefix gate (`ret=70670`, `trap_exceptions=23`,
 `terminal_traps=1`) plus 85/85 ACT/Spike smoke tests.
+The `Zicsr` ACT mismatch is now converted from a documented exclusion into a
+passing external smoke case. `rvlinux.v`, `rtl/cores/rvlinux.v`, and
+`rvlinux_csr_trap_stage.v` now advertise `misa.C` and mask only `mepc[0]` /
+`sepc[0]` on CSR writes; `tools/rvtrace_ref.py` mirrors the same `misa` and EPC
+WARL behavior; and `tb_rvlinux_csr_trap_stage.v` checks both `mepc=0x123 ->
+0x122` and `sepc=0x303 -> 0x302`. `tools/run_act4_spike_smoke.sh` includes
+`Zicsr` in the default group list and runs that group against the C-aware
+`rv32i_zicsr_zifencei_zca` Spike ISA. Local evidence: the CSR stage test passes,
+`logs/p1-act4-spike-zicsr-caware` passes 6/6 `Zicsr` tests,
+`logs/p1-act4-spike-imac-zicsr-default` passes 91/91 default ACT/Spike tests,
+and `logs/ci-p1-20260629-epc-zicsr-91` passes the full P1 profile with the same
+17-test Spike-prefix gate (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus 91/91 ACT/Spike tests. Evidence-health is raised to the
+91-test ACT/Spike floor and passes 47/47 checks in
+`logs/ci-evidence-health-20260629-epc-zicsr-91`; a negative
+`--min-p1-act4-spike-tests 92` check fails against the retained value of 91.
+The local quick profile's code-related stages (`directed`, `rvtests`, `trace`,
+`reftrace`, and `cache`) pass, but the full local quick run stops at `vtop_synth`
+because this host currently lacks `verilator`; hosted macOS CI is expected to
+cover that after push.
 
 ---
 

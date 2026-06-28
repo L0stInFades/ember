@@ -116,16 +116,17 @@ regression:
   uses `p1/act4/ember-rv32i/` DUT macros/linker support, compiles upstream ACT4
   RV32I tests, generates expected signatures with Spike, recompiles in
   `RVTEST_SELFCHECK` mode, and runs the ELFs on the Ember RTL testbench.
-  The default set is 85 pinned upstream RV32 `I`, `M`, `Zaamo`, `Zalrsc`,
-  `Zca`, and `Zifencei` tests. The upstream `Zicsr` group is held out while the
-  core's compressed-instruction support and `mepc`/`sepc` WARL low-bit behavior
-  are reconciled.
+  The default set is 91 pinned upstream RV32 `I`, `M`, `Zaamo`, `Zalrsc`,
+  `Zca`, `Zicsr`, and `Zifencei` tests. Because Ember implements compressed
+  instructions and now advertises `misa.C`, the `Zicsr` group is compared
+  against Spike with a C-aware `rv32i_zicsr_zifencei_zca` reference ISA so
+  `mepc`/`sepc` WARL low-bit behavior matches the DUT.
 - The metrics/dashboard layer now retains this external P1 evidence: `p1`
   profile summaries include external test count, compared retired rows, Spike
   commit count, non-terminal trap-exception checks, and terminal-trap coverage,
   plus the ACT/Spike smoke pass count. Evidence-health requires at least one
   retained P1 external run with 17 tests, 23 ordinary trap-exception checks, one
-  terminal trap, and 85 ACT/Spike smoke tests.
+  terminal trap, and 91 ACT/Spike smoke tests.
 - This is a Spike prefix plus ACT/Spike smoke gate, not full RVVI or full ACT4
   certification. Full ACT4/UDB remains future work; the local system Ruby is
   still 2.6 while upstream UDB wants Ruby 3.2+. RISCOF/ACT4 DUT/reference plugins,
@@ -1100,6 +1101,21 @@ quick `pass=1 fail=0`, retained RVTRACE audit remains green, and
 `logs/github-p1-external-28336556293` records the same 17-test Spike-prefix
 gate (`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus 85/85
 ACT/Spike smoke tests.
+The EPC WARL mismatch found by the `Zicsr` ACT group is now fixed rather than
+left as an excluded smoke case: `rvlinux.v` and `rvlinux_csr_trap_stage.v`
+advertise `misa.C` and mask only `mepc[0]`/`sepc[0]` on CSR writes, while
+`tools/rvtrace_ref.py` mirrors that behavior. The CSR stage test now checks
+`mepc=0x123 -> 0x122` and `sepc=0x303 -> 0x302`; `logs/p1-act4-spike-zicsr-caware`
+passes the six `Zicsr` ACT/Spike tests; and the default smoke in
+`logs/p1-act4-spike-imac-zicsr-default` passes 91/91 tests. The full local P1
+profile `logs/ci-p1-20260629-epc-zicsr-91` passes with the same 17-test
+Spike-prefix gate (`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus
+91/91 ACT/Spike tests. `logs/ci-evidence-health-20260629-epc-zicsr-91` passes
+47/47 checks under the new 91-test floor, while
+`python3 tools/check_ci_dashboard.py --min-p1-act4-spike-tests 92` fails as
+intended against the retained value of 91. A local quick profile reached all
+code-related checks (`directed`, `rvtests`, `trace`, `reftrace`, and `cache`)
+but stopped at `vtop_synth` because this host currently lacks `verilator`.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on

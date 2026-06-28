@@ -205,16 +205,17 @@ module tb_rvlinux_csr_trap_stage;
         step_csrw(12'h302, 32'h0000_0200, 32'h0000_0004); // delegate S ECALL
         step_csrw(12'h105, 32'h0000_0200, 32'h0000_0008); // stvec
         step_csrw(12'h341, 32'h0000_0123, 32'h0000_000c); // mepc
+        expect32("mepc masked", mepc_out, 32'h0000_0122);
         step_csrw(12'h300, 32'h0000_0880, 32'h0000_0010); // MPIE=1, MPP=S
 
         step_system0(32'h0000_0014, 32'h3020_0073, 2); // mret
-        expect32("mret next", next_pc, 32'h0000_0123);
+        expect32("mret next", next_pc, 32'h0000_0122);
         expect32("mret priv S", {30'd0, priv}, 32'd1);
         expect32("mret mstatus", mstatus_out & 32'h0000_1888, 32'h0000_0088);
 
-        step_csrw(12'h180, 32'h8000_0001, 32'h0000_0123); // satp
+        step_csrw(12'h180, 32'h8000_0001, 32'h0000_0122); // satp
         expect32("satp", satp, 32'h8000_0001);
-        step_csrw(12'h100, 32'h000c_0120, 32'h0000_0127); // sstatus SUM/MXR/SPIE
+        step_csrw(12'h100, 32'h000c_0120, 32'h0000_0126); // sstatus SUM/MXR/SPIE
         expect32("sum", {31'd0, sum}, 32'd1);
         expect32("mxr", {31'd0, mxr}, 32'd1);
 
@@ -225,19 +226,20 @@ module tb_rvlinux_csr_trap_stage;
         expect32("ecall sepc", sepc_out, 32'h0000_0130);
         expect32("ecall priv", {30'd0, priv}, 32'd1);
 
-        step_csrw(12'h141, 32'h0000_0300, 32'h0000_0200); // sepc
+        step_csrw(12'h141, 32'h0000_0303, 32'h0000_0200); // sepc
+        expect32("sepc masked", sepc_out, 32'h0000_0302);
         step_csrw(12'h100, 32'h0000_0020, 32'h0000_0204); // SPIE=1, SPP=0
         step_system0(32'h0000_0208, 32'h1020_0073, 3); // sret to U
-        expect32("sret next", next_pc, 32'h0000_0300);
+        expect32("sret next", next_pc, 32'h0000_0302);
         expect32("sret priv U", {30'd0, priv}, 32'd0);
 
         // U-mode attempt to access an M-mode CSR traps as illegal to M.
-        step_csrw(12'h305, 32'h0000_0444, 32'h0000_0300);
+        step_csrw(12'h305, 32'h0000_0444, 32'h0000_0302);
         expect32("illegal csr trap", {31'd0, trap_taken}, 32'd1);
         expect32("illegal flag", {31'd0, illegal}, 32'd1);
         expect32("illegal target", next_pc, 32'h0000_0100);
         expect32("illegal cause", mcause_out, 32'd2);
-        expect32("illegal mepc", mepc_out, 32'h0000_0300);
+        expect32("illegal mepc", mepc_out, 32'h0000_0302);
         expect32("illegal priv M", {30'd0, priv}, 32'd3);
 
         if (minstret_out < 64'd8) begin
