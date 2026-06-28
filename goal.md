@@ -392,6 +392,10 @@ tests, 71,683 retired instructions, 27 traps, 6 AMOs, 12 PTE updates, 25
 privilege switches, and 48/48 floor checks, and the hosted P1 external summary
 now includes both the 17-test Spike-prefix gate (`ret=70670`,
 `trap_exceptions=23`, `terminal_traps=1`) and 6/6 ACT/Spike smoke tests.
+The pushed source commit `ad11d07` passed hosted macOS CI as run `28336035414`:
+quick `pass=1 fail=0`, retained RVTRACE audit remains green, and the hosted P1
+external artifact records the same 17-test Spike-prefix gate plus 39/39
+ACT/Spike RV32I-I smoke tests.
 
 ---
 

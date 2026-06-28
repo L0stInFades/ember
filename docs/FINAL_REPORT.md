@@ -1073,6 +1073,10 @@ Source commit `394657a` passed hosted macOS CI as run `28335561543`: quick
 instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and
 48/48 floor checks, and `logs/github-p1-external-28335561543` records the
 17-test Spike-prefix gate plus 6/6 ACT/Spike smoke tests.
+Source commit `ad11d07` then passed hosted macOS CI as run `28336035414`:
+quick `pass=1 fail=0`, retained RVTRACE audit remains green, and
+`logs/github-p1-external-28336035414` records the same 17-test Spike-prefix
+gate plus 39/39 ACT/Spike RV32I-I smoke tests.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
