@@ -127,5 +127,30 @@ PY
       --stop-before-pc "$stop_pc"
   fi
 
+  if [ "${P1_SKIP_SPIKE_MISALIGN_PREFIX:-0}" != "1" ]; then
+    t=misalign
+    echo "=== spike-prefix $t ==="
+    rm -f rvtrace.log "$LOGDIR/rvtrace_${t}.csv"
+    LOG="$LOGDIR/${t}_dut.log" \
+      EXTRA_IVERILOG_FLAGS="-D RVTRACE" \
+      bash tests/build_run.sh "$t" >"$LOGDIR/${t}_build_run.log" 2>&1
+    test -s rvtrace.log
+    mv rvtrace.log "$LOGDIR/rvtrace_${t}.csv"
+
+    python3 tools/check_rvtrace.py \
+      --trace "$LOGDIR/rvtrace_${t}.csv" \
+      --hex "tests/${t}.hex" \
+      --base 0x80000000 \
+      --min-ret 1
+
+    python3 tools/spike_trace_prefix.py \
+      --trace "$LOGDIR/rvtrace_${t}.csv" \
+      --elf "tests/${t}.elf" \
+      --spike spike \
+      --spike-log "$LOGDIR/spike_${t}.log" \
+      --base 0x80000000 \
+      --expect-terminal-trap
+  fi
+
   echo "P1_EXTERNAL: PASS logdir=$LOGDIR"
 fi

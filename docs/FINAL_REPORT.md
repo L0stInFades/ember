@@ -67,11 +67,15 @@ External P1 verification bring-up has a strict tool gate separate from the defau
 regression:
 - `tools/setup_riscof_env.sh` creates `.p1/riscof-venv`, installs RISCOF, and
   clones `riscv-arch-test` into `.p1/riscv-arch-test`.
+- `tools/setup_spike_env.sh` clones/builds `riscv-isa-sim` into `.p1/` and
+  installs Spike under `.p1/spike` for the external prefix gate.
 - `verify_p1_external.sh` checks the host/RISCOF/difftest/DUT-simulation
   toolchain (`riscof`, RISC-V GCC/binutils, LLVM/iverilog/vvp, and `spike`) and
   automatically searches local `.p1/spike/bin` when present.
 - Current local audit passes with RISCOF 1.25.3, Homebrew `riscv64-elf-gcc`
-  16.1.0/binutils 2.46.1, and a locally built Spike 1.1.1-dev under `.p1/spike`.
+  16.1.0/binutils 2.46.1, and a locally built Spike 1.1.1-dev from
+  `riscv-isa-sim` commit `55b4658dbf574ba0b714083ec436ce2cb5be1998` under
+  `.p1/spike`.
 - The same external gate now runs Spike commit-log prefix comparison for the five
   no-trap directed tests: `isa`, `amotest`, `ctest`, `shtest`, and `mtest`. For
   each test it builds a DUT RVTRACE run, runs the matching ELF under Spike, drops
@@ -86,11 +90,17 @@ regression:
 - The `utrap` directed test is now covered up to its U-mode `ecall`: 49 committed
   `RET` rows spanning M-mode setup, `mret` into S-mode, `sret` into U-mode, and
   the U-mode store before `pc=0x8000007c`.
+- The `misalign` directed test is covered in Spike terminal-trap mode. The full
+  DUT RVTRACE still checks 447 rows with 445 retired instructions and 2 traps;
+  Spike comparison covers the 97 committed rows before the first misaligned load
+  and matches the terminal exception against the DUT TRAP row (`cause=4`,
+  `tval=0x8000146d` in the current build).
 - This is a Spike prefix gate, not full RVVI. RISCOF DUT/reference plugins,
-  complete Spike comparison after the final `mmu`/`utrap` `ecall` trap,
-  device-complete comparison, and full Spike/RVVI lockstep over all directed tests
-  are still the next implementation step. The local `tools/rvtrace_ref.py` path
-  still covers full `mmu`/`utrap` today.
+  complete Spike comparison after the final `mmu`/`utrap` `ecall` trap and after
+  terminal misaligned exceptions, device-complete comparison, and full Spike/RVVI
+  lockstep over all directed tests are still the next implementation step. The
+  local `tools/rvtrace_ref.py` path still covers full `mmu`/`utrap`/`misalign`
+  today.
 - `run_rvtests.sh` now executes the compiled `./soc_rt` vvp script through its own
   shebang instead of whichever `vvp` appears first in `PATH`; this avoids false
   rvtests failures when the OSS CAD Suite Icarus runtime is sourced over a test
@@ -890,6 +900,14 @@ checks in `quick/cache.log`. Its hosted `vtop_synth` also builds and halts clean
 under Verilator 5.048. `logs/github-p1-trace-audit-28332600873` reports the
 17-test / 71,682-retired / 27-trap / 6-AMO / 12-PTE-update /
 25-privilege-switch baseline with all 48 coverage-floor checks passing.
+The external P1 environment was also restored locally with
+`tools/setup_riscof_env.sh` and `tools/setup_spike_env.sh`: RISCOF 1.25.3 and
+Spike 1.1.1-dev from `riscv-isa-sim` commit
+`55b4658dbf574ba0b714083ec436ce2cb5be1998` pass `tools/p1_tool_audit.py`, and
+`./verify_p1_external.sh` passes in `logs/p1-external-20260629-misalign`. That
+run covers the existing five no-trap Spike prefixes, `mmu`, `utrap`, and
+`misalign` terminal-trap comparison (`rows=98`, `ret=97`, `trap=1`) against the
+first misaligned-load exception.
 `tools/collect_ci_metrics.py` now turns any `verify_ci.sh` log directory into
 machine-readable `summary.json` and human-readable `summary.md`, collecting CI
 pass/fail, `verify.sh` pass/fail, retained RVTRACE coverage, CI evidence health,
@@ -1047,7 +1065,7 @@ Synthesis/PnR evidence:
 ## How to reproduce
 - Full current regression: `bash verify.sh` (latest local run:
   `logs/ci-quick-20260629-010333/quick`, `pass=6 fail=0`)
-- External P1 tool + Spike prefix gate: `tools/setup_riscof_env.sh` then `./verify_p1_external.sh`
+- External P1 tool + Spike prefix gate: `tools/setup_riscof_env.sh`, `tools/setup_spike_env.sh`, then `./verify_p1_external.sh`
 - Directed tests: `for t in isa amotest mmu ctest shtest mtest utrap mprv mxr upage ifault; do bash tests/build_run.sh $t; done`
 - Boot to shell: `bash build_vtop.sh linux-build/fw_payload_sf.hex && bash run_shell.sh`
 - Verilator synth-shell smoke: `SYNTH_SHELL=1 MEMWORDS=4096 MEMFILE_WORDS=10 OBJ_DIR=obj_vtop_verify_synth bash build_vtop.sh tb_rvlinux_synth_shell_memfile.hex && ./obj_vtop_verify_synth/Vvtop --maxcyc=20000`

@@ -270,6 +270,17 @@ populating the retained trend history from real remote CI/cron runs, and default
 integration. The behavioral single-cycle path is no longer the only login path, but
 it remains the historical simulation model; this is still far from the RVA23-class,
 silicon-proven north star.
+The local external P1 environment has also been restored as reproducible setup
+steps: `tools/setup_riscof_env.sh` installs RISCOF 1.25.3,
+`tools/setup_spike_env.sh` builds Spike 1.1.1-dev from `riscv-isa-sim` commit
+`55b4658dbf574ba0b714083ec436ce2cb5be1998`, and `tools/p1_tool_audit.py` passes
+with both on `PATH`. The full external gate passes in
+`logs/p1-external-20260629-misalign`, covering the five no-trap Spike prefixes,
+`mmu`, `utrap`, and the new `misalign` terminal-trap comparison (`rows=98`,
+`ret=97`, `trap=1`) where Spike's first misaligned-load exception is matched
+against the DUT TRAP row. This is evidence hardening, not performance work: it
+adds an independent ISS check for the new trap behavior while full RVVI/complete
+post-trap lockstep remains future P1 work.
 
 ---
 

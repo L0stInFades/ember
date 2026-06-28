@@ -5,7 +5,8 @@ This is a first external-ISS gate, not a full RVVI implementation. Spike starts
 through its own boot stub, so this tool discards commits below the DUT RAM base
 and then compares the DUT stream against Spike's committed instructions. Spike
 does not emit a commit row for faulting instructions, so DUT TRAP rows are
-handled by checking that the next Spike commit lands at the DUT trap target.
+handled either by checking that the next Spike commit lands at the DUT trap
+target, or by matching a terminal Spike exception when Spike stops at the trap.
 """
 import argparse
 import csv
@@ -30,7 +31,27 @@ FIELDS = [
 COMMIT_RE = re.compile(
     r"core\s+\d+:\s+(\d+)\s+0x([0-9a-fA-F]+)\s+\(0x([0-9a-fA-F]+)\)(.*)"
 )
+EXEC_RE = re.compile(r"core\s+\d+:\s+0x([0-9a-fA-F]+)\s+\(0x([0-9a-fA-F]+)\)")
+EXCEPTION_RE = re.compile(r"core\s+\d+:\s+exception\s+(\S+),\s+epc\s+0x([0-9a-fA-F]+)")
+TVAL_RE = re.compile(r"core\s+\d+:\s+tval\s+0x([0-9a-fA-F]+)")
 XREG_RE = re.compile(r"\bx([0-9]+)\s+0x([0-9a-fA-F]+)")
+
+EXCEPTION_CAUSES = {
+    "trap_instruction_address_misaligned": 0,
+    "trap_instruction_access_fault": 1,
+    "trap_illegal_instruction": 2,
+    "trap_breakpoint": 3,
+    "trap_load_address_misaligned": 4,
+    "trap_load_access_fault": 5,
+    "trap_store_address_misaligned": 6,
+    "trap_store_access_fault": 7,
+    "trap_user_ecall": 8,
+    "trap_supervisor_ecall": 9,
+    "trap_machine_ecall": 11,
+    "trap_instruction_page_fault": 12,
+    "trap_load_page_fault": 13,
+    "trap_store_page_fault": 15,
+}
 
 
 def parse_int(text, base=0):
@@ -49,7 +70,7 @@ def parse_hex(text):
     return int(text, 16)
 
 
-def load_trace(path, max_rows, stop_before_pc):
+def load_trace(path, max_rows, stop_before_pc, stop_after_first_trap):
     rows = []
     stopped_at = None
     with open(path, "r", encoding="ascii", newline="") as f:
@@ -77,6 +98,8 @@ def load_trace(path, max_rows, stop_before_pc):
                     "tval": parse_hex(row["tval"]),
                 }
             )
+            if stop_after_first_trap and row["event"] == "TRAP":
+                break
             if max_rows and len(rows) >= max_rows:
                 break
     if not rows:
@@ -93,10 +116,10 @@ def run_spike(args, needed_rows):
         f"--isa={args.isa}",
         f"--priv={args.priv}",
         f"-m{args.mem}",
-        "--log-commits",
-        f"--instructions={instructions}",
-        args.elf,
     ]
+    if args.expect_terminal_trap:
+        cmd.append("-l")
+    cmd.extend(["--log-commits", f"--instructions={instructions}", args.elf])
     proc = subprocess.run(
         cmd,
         stdout=subprocess.PIPE,
@@ -138,7 +161,41 @@ def parse_spike_commits(text, base):
     return commits
 
 
-def compare(trace_rows, spike_rows, stopped_at, max_errors):
+def parse_spike_exception(text):
+    last_exec = None
+    pending = None
+    for line in text.splitlines():
+        exec_match = EXEC_RE.search(line)
+        if exec_match:
+            last_exec = {
+                "pc": int(exec_match.group(1), 16) & 0xFFFFFFFF,
+                "instr": int(exec_match.group(2), 16) & 0xFFFFFFFF,
+            }
+            continue
+
+        exception_match = EXCEPTION_RE.search(line)
+        if exception_match:
+            name = exception_match.group(1)
+            pending = {
+                "name": name,
+                "cause": EXCEPTION_CAUSES.get(name),
+                "pc": int(exception_match.group(2), 16) & 0xFFFFFFFF,
+                "instr": None,
+                "tval": None,
+            }
+            if last_exec and last_exec["pc"] == pending["pc"]:
+                pending["instr"] = last_exec["instr"]
+            continue
+
+        if pending:
+            tval_match = TVAL_RE.search(line)
+            if tval_match:
+                pending["tval"] = int(tval_match.group(1), 16) & 0xFFFFFFFF
+                return pending
+    return pending
+
+
+def compare(trace_rows, spike_rows, stopped_at, max_errors, terminal_trap):
     errors = []
     ret_rows = sum(1 for row in trace_rows if row["event"] == "RET")
     if len(spike_rows) < ret_rows:
@@ -148,6 +205,8 @@ def compare(trace_rows, spike_rows, stopped_at, max_errors):
     spike_idx = 0
     for idx, dut in enumerate(trace_rows, 1):
         if dut["event"] == "TRAP":
+            if terminal_trap and idx == len(trace_rows):
+                continue
             if spike_idx >= len(spike_rows):
                 errors.append(
                     f"row {idx} trace line {dut['line']}: no Spike commit at trap target "
@@ -197,6 +256,24 @@ def compare(trace_rows, spike_rows, stopped_at, max_errors):
     return errors
 
 
+def compare_terminal_trap(trace_rows, spike_exception):
+    if trace_rows[-1]["event"] != "TRAP":
+        return ["terminal trap mode requires the compared DUT prefix to end at a TRAP row"]
+    if spike_exception is None:
+        return ["Spike did not log a terminal exception"]
+    dut = trace_rows[-1]
+    errors = []
+    for field in ("pc", "instr", "cause", "tval"):
+        if spike_exception.get(field) is None:
+            errors.append(f"Spike terminal exception did not report {field}")
+        elif dut[field] != spike_exception[field]:
+            errors.append(
+                f"terminal trap {field} mismatch "
+                f"dut={format_value(field, dut[field])} spike={format_value(field, spike_exception[field])}"
+            )
+    return errors
+
+
 def format_value(field, value):
     if field in ("priv", "rd"):
         return str(value)
@@ -215,6 +292,12 @@ def main():
     ap.add_argument("--priv", default="msu", help="Spike --priv value")
     ap.add_argument("--max-rows", type=int, default=0, help="compare only this many DUT rows; 0 means all rows")
     ap.add_argument("--stop-before-pc", help="stop comparing when this DUT PC is reached")
+    ap.add_argument("--stop-after-first-trap", action="store_true", help="stop after the first DUT TRAP row")
+    ap.add_argument(
+        "--expect-terminal-trap",
+        action="store_true",
+        help="expect Spike to stop at the final DUT TRAP and compare its logged exception",
+    )
     ap.add_argument("--instructions", type=int, help="exact Spike instruction limit")
     ap.add_argument("--spike-slack", type=int, default=1024, help="extra Spike commits beyond DUT rows")
     ap.add_argument("--timeout", type=int, default=30, help="Spike timeout in seconds")
@@ -224,11 +307,14 @@ def main():
     try:
         base = parse_int(args.base)
         stop_before_pc = parse_int(args.stop_before_pc) if args.stop_before_pc else None
-        trace_rows, stopped_at = load_trace(args.trace, args.max_rows, stop_before_pc)
+        stop_after_first_trap = args.stop_after_first_trap or args.expect_terminal_trap
+        trace_rows, stopped_at = load_trace(args.trace, args.max_rows, stop_before_pc, stop_after_first_trap)
         needed_commits = sum(1 for row in trace_rows if row["event"] == "RET")
         spike_output = run_spike(args, needed_commits)
         spike_rows = parse_spike_commits(spike_output, base)
-        errors = compare(trace_rows, spike_rows, stopped_at, args.max_errors)
+        errors = compare(trace_rows, spike_rows, stopped_at, args.max_errors, args.expect_terminal_trap)
+        if args.expect_terminal_trap:
+            errors.extend(compare_terminal_trap(trace_rows, parse_spike_exception(spike_output)))
     except (OSError, RuntimeError, subprocess.TimeoutExpired, ValueError) as exc:
         print(f"SPIKE_TRACE_PREFIX: FAIL {exc}", file=sys.stderr)
         return 1
@@ -246,6 +332,7 @@ def main():
         f"rows={compared} ret={compared - traps} trap={traps} spike_commits={len(spike_rows)} "
         f"first_pc=0x{trace_rows[0]['pc']:08x} last_pc=0x{trace_rows[-1]['pc']:08x}"
         + (f" stopped_before=0x{stopped_at:08x}" if stopped_at is not None else "")
+        + (" terminal_trap=1" if args.expect_terminal_trap else "")
     )
     return 0
 
