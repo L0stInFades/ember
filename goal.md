@@ -437,6 +437,11 @@ The local quick profile's code-related stages (`directed`, `rvtests`, `trace`,
 `reftrace`, and `cache`) pass, but the full local quick run stops at `vtop_synth`
 because this host currently lacks `verilator`; hosted macOS CI is expected to
 cover that after push.
+The pushed source commit `f7d794e` passed hosted macOS CI as run `28337247599`:
+quick `pass=1 fail=0`, retained RVTRACE audit remains green, and the hosted P1
+external artifact `logs/github-p1-external-28337247599` records the same
+17-test Spike-prefix gate (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus 91/91 ACT/Spike smoke tests.
 
 ---
 

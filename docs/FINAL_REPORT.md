@@ -1116,6 +1116,11 @@ Spike-prefix gate (`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus
 intended against the retained value of 91. A local quick profile reached all
 code-related checks (`directed`, `rvtests`, `trace`, `reftrace`, and `cache`)
 but stopped at `vtop_synth` because this host currently lacks `verilator`.
+Source commit `f7d794e` then passed hosted macOS CI as run `28337247599`:
+quick `pass=1 fail=0`, retained RVTRACE audit remains green, and
+`logs/github-p1-external-28337247599` records the same 17-test Spike-prefix gate
+(`ret=70670`, `trap_exceptions=23`, `terminal_traps=1`) plus 91/91 ACT/Spike
+smoke tests.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
