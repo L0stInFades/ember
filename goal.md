@@ -169,10 +169,10 @@ enforces default per-test coverage floors so those signals cannot silently move 
 of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
 artifacts, P0 Linux login evidence with a default 9B-cycle ceiling, exact P1
-external test composition, 40 MHz PnR evidence, RVTRACE aggregate counts, and 48
-per-test coverage-floor checks. The
-current dashboard in this worktree scans 78 summaries, retains 78 history
-records, has a 9-run pass streak, and tracks the latest P0 Linux evidence with
+external test composition across summary/dashboard/history artifacts, 40 MHz PnR
+evidence, RVTRACE aggregate counts, and 48 per-test coverage-floor checks. The
+current dashboard in this worktree scans 79 summaries, retains 79 history
+records, has a 10-run pass streak, and tracks the latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, latest retained RVTRACE audit/coverage,
 latest CI evidence health, best PnR Fmax, profile counts, floor-check status,
 latest run per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
@@ -507,6 +507,14 @@ quick `pass=1 fail=0`, and hosted P1 external
 (`isa,amotest,ctest,shtest,mtest,mmu,utrap,misalign,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`)
 with `ret=70670`, `trap_exceptions=23`, and `terminal_traps=1`, plus 106/106
 ACT/Spike tests with `group_count=12` and the expected group CSV.
+The dashboard/trend layer now exposes that same P1 external test list directly:
+`logs/ci-dashboard.md` and `logs/ci-trend.md` print the latest CSV, and
+`tools/check_ci_dashboard.py` checks the list from the latest summary, dashboard
+top-level JSON, and history trend JSON. Local
+`logs/ci-evidence-health-20260629-p1-dashboard-tests` passes the refreshed
+55-check health gate; a shortened `--require-p1-external-tests` list now fails in
+all three places, proving the retained dashboard/history cannot silently drop the
+`amo_mmu` test either.
 
 ---
 

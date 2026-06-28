@@ -127,11 +127,13 @@ regression:
   profile summaries include external test count, exact Spike-prefix test names,
   compared retired rows, Spike commit count, non-terminal trap-exception checks,
   and terminal-trap coverage, plus the ACT/Spike smoke pass count and exact
-  selected ACT group list. Evidence-health requires at least one retained P1
-  external run with the exact 17-test list
+  selected ACT group list. The cross-run dashboard and trend history expose the
+  latest Spike-prefix test-name CSV too. Evidence-health requires at least one
+  retained P1 external run with the exact 17-test list
   (`isa,amotest,ctest,shtest,mtest,mmu,utrap,misalign,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`),
-  23 ordinary trap-exception checks, one terminal trap, 106 ACT/Spike smoke
-  tests, and the exact default group list (`I,M,Zmmul,Zaamo,Zalrsc,Zca,Zicsr,Zicntr,Zifencei,Zihintpause,Zihintntl,ZihintntlZca`).
+  checks the same list from summary/dashboard/history artifacts, requires 23
+  ordinary trap-exception checks, one terminal trap, 106 ACT/Spike smoke tests,
+  and the exact default group list (`I,M,Zmmul,Zaamo,Zalrsc,Zca,Zicsr,Zicntr,Zifencei,Zihintpause,Zihintntl,ZihintntlZca`).
 - The P0 Linux evidence path now retains the synth-shell boot-to-login cycle
   point. `verify_p0_linux.sh` emits `P0_LINUX_BOOT`, summaries/dashboard/trend
   carry `cycles=8716611501`, and evidence-health requires the latest retained
@@ -1190,6 +1192,12 @@ exact 17-test Spike-prefix list
 (`isa,amotest,ctest,shtest,mtest,mmu,utrap,misalign,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`)
 with `ret=70670`, `trap_exceptions=23`, and `terminal_traps=1`, plus 106/106
 ACT/Spike tests with `group_count=12` and the expected group CSV.
+The cross-run dashboard/trend path now exposes the latest P1 external test CSV
+directly and evidence-health checks that the same exact list is retained in the
+latest summary, dashboard top-level JSON, and history trend JSON. Local
+`logs/ci-evidence-health-20260629-p1-dashboard-tests` passes 55/55 checks; a
+shortened `--require-p1-external-tests` list fails in all three P1 test-list
+checks.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on

@@ -338,6 +338,29 @@ def main():
                     ),
                     p1_source,
                 )
+                dashboard_p1_tests = dashboard.get("latest_p1_external_tests") or []
+                add_check(
+                    checks,
+                    "P1 external dashboard test list",
+                    dashboard_p1_tests == required_p1_tests,
+                    "tests={actual} required={required}".format(
+                        actual=",".join(dashboard_p1_tests) or "missing",
+                        required=",".join(required_p1_tests),
+                    ),
+                    str(dashboard_path),
+                )
+                history_p1 = history.get("p1_external") if isinstance(history.get("p1_external"), dict) else {}
+                history_p1_tests = history_p1.get("latest_tests") or []
+                add_check(
+                    checks,
+                    "P1 external history test list",
+                    history_p1_tests == required_p1_tests,
+                    "tests={actual} required={required}".format(
+                        actual=",".join(history_p1_tests) or "missing",
+                        required=",".join(required_p1_tests),
+                    ),
+                    str(history_path),
+                )
             check_min(
                 checks,
                 "P1 external trap exceptions",

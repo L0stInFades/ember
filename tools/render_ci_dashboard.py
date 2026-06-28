@@ -191,6 +191,12 @@ def p1_external_record(item):
     }
 
 
+def p1_external_test_names(item):
+    if not item:
+        return []
+    return [test.get("test") for test in item.get("tests", []) if test.get("test")]
+
+
 def act4_spike_record(item):
     if not item:
         return None
@@ -290,8 +296,10 @@ def trend_summary(records):
 
     pnr_records = [record for record in records if record.get("pnr") and record["pnr"].get("fmax_mhz") is not None]
     pnr_values = [record["pnr"].get("fmax_mhz", 0) for record in pnr_records]
+    p1_external_records = [record for record in records if record.get("p1_external")]
     latest_failure = next((record for record in newest if record.get("status") != "pass"), None)
     latest_pnr = next((record for record in newest if record.get("pnr")), None)
+    latest_p1_external = next((record for record in newest if record.get("p1_external")), None)
     p0_linux_login_records = [
         record
         for record in records
@@ -333,6 +341,16 @@ def trend_summary(records):
             "max_cycles": max(cycles),
         }
 
+    p1_external = None
+    if latest_p1_external:
+        latest_p1 = latest_p1_external.get("p1_external") or {}
+        p1_external = {
+            "runs": len(p1_external_records),
+            "latest_logdir": latest_p1_external.get("logdir"),
+            "latest_test_count": latest_p1.get("test_count"),
+            "latest_tests": p1_external_test_names(latest_p1),
+        }
+
     return {
         "runs": len(records),
         "profile_counts": dict(sorted(profile_counts.items())),
@@ -347,7 +365,8 @@ def trend_summary(records):
         "p0_linux_runs": sum(1 for record in records if record.get("p0_linux")),
         "p0_linux_login_runs": len(p0_linux_login_records),
         "p0_linux_login_cycles": p0_linux_login_cycles,
-        "p1_external_runs": sum(1 for record in records if record.get("p1_external")),
+        "p1_external_runs": len(p1_external_records),
+        "p1_external": p1_external,
         "act4_spike_runs": sum(1 for record in records if record.get("act4_spike")),
         "rvtrace_runs": sum(1 for record in records if record.get("rvtrace")),
         "rvtrace_coverage_runs": sum(1 for record in records if record.get("rvtrace_coverage")),
@@ -390,6 +409,13 @@ def trend_lines(trend, history_path):
         )
     else:
         lines.append("- P0 Linux login cycles: `none`")
+    p1 = trend.get("p1_external")
+    if p1 and p1.get("latest_tests"):
+        lines.append(
+            f"- P1 external latest tests: `{','.join(p1['latest_tests'])}` from `{p1['latest_logdir']}`"
+        )
+    else:
+        lines.append("- P1 external latest tests: `none`")
     if trend["latest_failure"]:
         failure = trend["latest_failure"]
         lines.append(
@@ -419,11 +445,14 @@ def row(summary):
     p1_external = "-"
     if summary.get("p1_external"):
         latest_p1 = summary["p1_external"][-1]
+        test_names = p1_external_test_names(latest_p1)
+        names_suffix = f", names={','.join(test_names)}" if test_names else ""
         p1_external = (
             f"{latest_p1.get('test_count', 0)} tests, "
             f"{latest_p1.get('ret', 0)} ret, "
             f"{latest_p1.get('trap_exceptions', 0)} trap-exc, "
             f"{latest_p1.get('terminal_traps', 0)} term"
+            f"{names_suffix}"
         )
     act4_spike = "-"
     if summary.get("act4_spike"):
@@ -523,6 +552,7 @@ def main():
         "latest_by_profile": {profile: summary.get("logdir") for profile, summary in sorted(latest_profiles.items())},
         "latest_p0_linux": latest_p0.get("logdir") if latest_p0 else None,
         "latest_p1_external": latest_p1_external.get("logdir") if latest_p1_external else None,
+        "latest_p1_external_tests": p1_external_test_names(latest_item(latest_p1_external, "p1_external")) if latest_p1_external else [],
         "latest_act4_spike": latest_act4_spike.get("logdir") if latest_act4_spike else None,
         "latest_rvtrace": latest_trace.get("logdir") if latest_trace else None,
         "latest_rvtrace_coverage": latest_coverage.get("logdir") if latest_coverage else None,
@@ -573,6 +603,7 @@ def main():
         f"- retained history runs: `{trend['runs']}`",
         f"- latest P0 Linux evidence: `{dashboard['latest_p0_linux'] or 'none'}`",
         f"- latest P1 external evidence: `{dashboard['latest_p1_external'] or 'none'}`",
+        f"- latest P1 external tests: `{','.join(dashboard['latest_p1_external_tests']) or 'none'}`",
         f"- latest ACT/Spike smoke: `{dashboard['latest_act4_spike'] or 'none'}`",
         f"- latest RVTRACE audit: `{dashboard['latest_rvtrace'] or 'none'}`",
         f"- latest RVTRACE coverage: `{dashboard['latest_rvtrace_coverage'] or 'none'}`",
