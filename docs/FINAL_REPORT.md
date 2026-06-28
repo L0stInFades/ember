@@ -985,6 +985,14 @@ passing with 8 external tests, 9,167 compared retired rows, 3 compared trap rows
 9,167 Spike commits, and 1 terminal-trap comparison. This is still the current
 Spike prefix/terminal-trap gate rather than complete RVVI lockstep, but it is no
 longer local-only evidence.
+The follow-up source commit `0447a1f` passed hosted macOS CI as run
+`28334099355`: the quick artifact reports quick `pass=1 fail=0` with `verify.sh`
+`pass=6 fail=0`; the retained RVTRACE audit artifact reports 17 tests, 71,682
+retired instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege switches,
+and 48/48 floor checks; and `logs/github-p1-external-28334099355` reports the
+expanded `p1` profile passing with 16 external tests, 65,219 compared retired
+rows, 23 compared trap rows, 77,632 Spike commits, and 1 terminal-trap
+comparison.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on

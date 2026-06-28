@@ -321,6 +321,13 @@ test's syscon report-store stop point, then compares Spike prefixes for `mxr`,
 `logs/ci-evidence-health-20260629-p1-external-sv32` passes 42/42 checks with
 the new default 16-test floor. Negative checks for `--min-p1-external-tests 17`
 and `--min-p1-external-terminal-traps 2` fail as expected.
+The pushed source commit `0447a1f` passed hosted macOS CI as run `28334099355`:
+quick `pass=1 fail=0`, `verify.sh` `pass=6 fail=0`, retained RVTRACE audit
+totals of 17 tests, 71,682 retired instructions, 27 traps, 6 AMOs, 12 PTE
+updates, 25 privilege switches, and 48/48 floor checks, plus the hosted
+`P1 external Spike gate` summary with 16 external tests, 65,219 compared retired
+rows, 23 compared trap rows, 77,632 Spike commits, and 1 terminal-trap
+comparison.
 
 ---
 
