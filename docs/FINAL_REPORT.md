@@ -962,6 +962,16 @@ with `verify.sh` `pass=6 fail=0`, and
 `logs/github-p1-trace-audit-28333520885` reports 17 tests, 71,682 retired
 instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and 48/48
 floor checks.
+The hosted workflow now also carries the external P1 Spike gate as a separate
+macOS job. Source commit `1cde00e` passed hosted run `28333671496`: the quick
+artifact reports quick `pass=1 fail=0` with `verify.sh` `pass=6 fail=0`; the
+retained RVTRACE audit artifact reports the same 17 tests, 71,682 retired
+instructions, 27 traps, 6 AMOs, 12 PTE updates, 25 privilege switches, and 48/48
+floor checks; and `logs/github-p1-external-28333671496` reports the `p1` profile
+passing with 8 external tests, 9,167 compared retired rows, 3 compared trap rows,
+9,167 Spike commits, and 1 terminal-trap comparison. This is still the current
+Spike prefix/terminal-trap gate rather than complete RVVI lockstep, but it is no
+longer local-only evidence.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -1018,11 +1028,12 @@ fresh `./verify_ci.sh quick` passed with `pass=1 fail=0` in
 `logs/ci-quick-20260629-010333`. The same cron wrapper also passed the combined
 retained evidence profile in `logs/cron/p0-evidence-20260628-231323`. The
 hosted/self-hosted workflow files have been syntax-parsed locally; `actionlint` is
-not installed in this environment. The hosted macOS quick workflow now passes
-remotely with retained RVTRACE coverage audit enabled; the first self-hosted
-scheduled/nightly runner execution is still pending. The hosted workflow ignores
-docs-only Markdown pushes so evidence-record updates do not consume full quick
-runner time unless source, script, test, or workflow files also changed.
+not installed in this environment. The hosted macOS workflow now passes remotely
+with both retained RVTRACE coverage audit and the external P1 Spike gate enabled;
+the first self-hosted scheduled/nightly runner execution is still pending. The
+hosted workflow ignores docs-only Markdown pushes so evidence-record updates do
+not consume runner time unless source, script, test, or workflow files also
+changed.
 The GitHub worktree migration also removed several hidden local-artifact
 dependencies: `run_rvtests.sh` now locates LLVM tools and rebuilds `soc_rt` from
 source with `SIM_INIT`, `tests/build_run.sh` compiles objects and invokes
@@ -1114,7 +1125,7 @@ Synthesis/PnR evidence:
 - Standard synth-shell no-net boot-to-login run: `./run_synth_shell_nonet.sh` (add `--prepare-payload` if `linux-build/fw_payload_sf_nonet.bin` is missing; add `--no-build` to reuse an existing `obj_vtop_synth_linux_sf_tb400m_nonet/Vvtop`)
 - Explicit P0 Linux gate: `./verify_p0_linux.sh` for the full expensive boot-to-login run, `./verify_p0_linux.sh --smoke --reuse` for a quick OpenSBI harness/payload smoke, or `./verify_p0_linux.sh --check-logs=logs/run-synth-shell-nonet-default-login` to audit the retained full-run logs.
 - Profiled CI/nightly scheduler: `./verify_ci.sh quick` for the normal regression, `./verify_ci.sh pr` for quick plus P0 smoke, `P0_SMOKE_REUSE=1 ./verify_ci.sh p0-smoke` for a reused fast P0 Linux smoke, `./verify_ci.sh p0-audit` to audit retained login logs, `./verify_ci.sh p0-pnr-audit` to audit retained current PnR evidence, `./verify_ci.sh p0-evidence` to audit retained Linux+PnR evidence together, `./verify_ci.sh p1-trace-audit` to audit retained RVTRACE/ref-model evidence and write `rvtrace_coverage.json` / `rvtrace_coverage.md`, `./verify_ci.sh evidence-health` to check retained dashboard/history evidence and write `ci_health.json` / `ci_health.md`, `./verify_ci.sh p0-pnr` for current synth-shell top yosys+nextpnr, and `./verify_ci.sh nightly` for quick + P1 + P1 trace audit + P0 smoke + P0 PnR + full P0 Linux. Every profile now writes `summary.json` and `summary.md` under its `LOGDIR` and refreshes `logs/ci-dashboard.json`, `logs/ci-dashboard.md`, `logs/ci-history.jsonl`, and `logs/ci-trend.md`; the dashboard and trend history can also be regenerated manually with `python3 tools/render_ci_dashboard.py --root logs`.
-- Automation wrappers: GitHub hosted quick CI is `.github/workflows/ci.yml`, self-hosted nightly CI is `.github/workflows/nightly.yml`, and local cron/launchd can use `tools/ci_cron.sh nightly` (for example `0 1 * * * cd /Users/Apple/riscv-rv32i-core && tools/ci_cron.sh nightly`), `tools/ci_cron.sh p0-evidence` for low-cost P0 evidence audits, `tools/ci_cron.sh p1-trace-audit` for retained P1 trace audits, or `tools/ci_cron.sh evidence-health` for cheap retained-evidence health checks between expensive runs.
+- Automation wrappers: GitHub hosted quick plus P1 external CI is `.github/workflows/ci.yml`, self-hosted nightly CI is `.github/workflows/nightly.yml`, and local cron/launchd can use `tools/ci_cron.sh nightly` (for example `0 1 * * * cd /Users/Apple/riscv-rv32i-core && tools/ci_cron.sh nightly`), `tools/ci_cron.sh p0-evidence` for low-cost P0 evidence audits, `tools/ci_cron.sh p1-trace-audit` for retained P1 trace audits, or `tools/ci_cron.sh evidence-health` for cheap retained-evidence health checks between expensive runs.
 - WFI timer regression: `iverilog -g2012 -o /tmp/tb_rvlinux_min_core_wfi_timer cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_wfi_timer.v && vvp /tmp/tb_rvlinux_min_core_wfi_timer`
 - CLINT/CSR time regression: `iverilog -g2012 -o /tmp/tb_rvlinux_min_core_time_csr cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_time_csr.v && vvp /tmp/tb_rvlinux_min_core_time_csr`
 - Side-effect interrupt replay regression: `iverilog -g2012 -o /tmp/tb_rvlinux_min_core_interrupt_side_effect cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_interrupt_side_effect.v && vvp /tmp/tb_rvlinux_min_core_interrupt_side_effect`

@@ -300,6 +300,16 @@ The pushed source commit `8fe3078` passed hosted macOS quick CI as run
 `28333520885`: quick `pass=1 fail=0`, `verify.sh` `pass=6 fail=0`, and retained
 RVTRACE audit totals of 17 tests, 71,682 retired instructions, 27 traps, 6 AMOs,
 12 PTE updates, 25 privilege switches, and 48/48 floor checks.
+The hosted macOS workflow now also runs the external P1 Spike gate as its own
+job. Source commit `1cde00e` passed run `28333671496`: the quick job again
+reported quick `pass=1 fail=0` and `verify.sh` `pass=6 fail=0`; the retained
+RVTRACE audit reported 17 tests, 71,682 retired instructions, 27 traps, 6 AMOs,
+12 PTE updates, 25 privilege switches, and 48/48 floor checks; and the new
+`P1 external Spike gate` job reported `p1` `pass=1 fail=0` with 8 external
+tests, 9,167 compared retired rows, 3 compared trap rows, 9,167 Spike commits,
+and 1 terminal-trap comparison. That moves the current external Spike prefix
+gate from local-only evidence into hosted CI, while full RISCOF plugin/RVVI
+lockstep remains future P1 work.
 
 ---
 
