@@ -1008,6 +1008,15 @@ negative checks for `--min-p1-external-tests 18` and
 also passed directed, rvtests, RVTRACE structural/ref-model, and cache checks
 for the ADUE-updated `mprv`; only `vtop_synth` failed locally because this host
 does not have `verilator` installed.
+The pushed source commit `61c50d0` then passed hosted macOS CI as run
+`28334435648`: `logs/github-quick-28334435648` reports quick `pass=1 fail=0`
+with `verify.sh` `pass=6 fail=0`; `logs/github-p1-trace-audit-28334435648`
+reports 17 tests, 71,683 retired instructions, 27 traps, 6 AMOs, 12 PTE
+updates, 25 privilege switches, and 48/48 floor checks; and
+`logs/github-p1-external-28334435648` reports the full `p1` profile passing with
+all 17 external tests, 70,670 compared retired rows, 24 compared trap rows,
+85,628 Spike commits, and 1 terminal-trap comparison. That moves the complete
+directed-test external Spike prefix gate from local-only evidence into hosted CI.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -1028,14 +1037,14 @@ profile counts of `evidence-health=16`, `p0-evidence=1`, `p1=7`,
 `p1-trace-audit=16`, and `quick=14`, 7 P1 external evidence runs, 16 RVTRACE
 coverage artifact runs, 16 CI evidence health runs, latest P0 Linux evidence from
 `logs/ci-p0-evidence-20260628-233213`, latest P1 external evidence from
-`logs/ci-p1-20260629-p1-external-mprv-v2`, latest RVTRACE audit/coverage from
-`logs/github-p1-trace-audit-28334099355`, latest CI evidence health from
+`logs/ci-p1-20260629-p1-external-mprv-v2`, latest hosted RVTRACE audit/coverage from
+`logs/github-p1-trace-audit-28334435648`, latest CI evidence health from
 `logs/ci-evidence-health-20260629-p1-external-mprv-v2`, and best PnR at **53.94 MHz**
 for the 40 MHz target. The latest coverage table shows 48/48 floor checks passing:
 `isa`/`amotest` plus `amo_mmu` cover the 6 AMOs, `mmu` covers the original PTE
 update and 3 traps,
 `utrap` covers the user trap plus 3 privilege switches, and `mprv` contributes
-5,452 retired instructions, 1 load page fault, and 1 additional PTE A-bit update;
+5,453 retired instructions, 1 load page fault, and 1 additional PTE A-bit update;
 `mxr` contributes 5,501 retired instructions, 2 traps, 2 privilege switches, and
 1 additional PTE A-bit update; `upage` contributes 9,593 retired instructions,
 3 traps, 6 privilege switches, and 2 additional PTE A/D updates; `ifault`

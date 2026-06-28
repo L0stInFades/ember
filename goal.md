@@ -112,7 +112,7 @@ path scriptable local-CI/nightly profiles (`quick`, `pr`, `p0-smoke`, `p0-audit`
 combined retained Linux+PnR evidence audit, retained RVTRACE/ref-model audit,
 retained dashboard/history health audit, and reused P0 smoke profile all pass. The
 P1 trace audit rechecks retained `rvtrace_*.csv` with both
-structural and reference-model checkers and currently covers 17 tests, 71,682
+structural and reference-model checkers and currently covers 17 tests, 71,683
 retired instructions, 27 traps, 6 AMOs, 12 PTE updates, and 25 privilege switches.
 The added `mprv` directed trace covers MPRV+SUM data permissions: a user-page load
 through `MPRV=1, MPP=S` succeeds with `SUM=1`, then faults with `SUM=0` and records
@@ -341,6 +341,13 @@ passes 42/42 checks; negative checks for `--min-p1-external-tests 18` and
 passes directed, rvtests, RVTRACE structural/ref-model, and cache checks for the
 ADUE-updated `mprv`; its only failure is the known local `vtop_synth`
 environment gap (`verilator` missing), which hosted CI covers.
+The pushed source commit `61c50d0` passed hosted macOS CI as run `28334435648`:
+quick `pass=1 fail=0`, `verify.sh` `pass=6 fail=0`, retained RVTRACE audit
+totals of 17 tests, 71,683 retired instructions, 27 traps, 6 AMOs, 12 PTE
+updates, 25 privilege switches, and 48/48 floor checks, plus the hosted
+`P1 external Spike gate` summary with all 17 external tests, 70,670 compared
+retired rows, 24 compared trap rows, 85,628 Spike commits, and 1 terminal-trap
+comparison.
 
 ---
 
