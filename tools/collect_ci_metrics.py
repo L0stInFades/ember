@@ -23,6 +23,8 @@ SPIKE_PREFIX_RE = re.compile(
 )
 P1_EXTERNAL_RE = re.compile(r"P1_EXTERNAL: PASS logdir=(?P<logdir>.+)")
 ACT4_SPIKE_GROUPS_RE = re.compile(r"P1_ACT4_SPIKE_GROUPS: count=(?P<count>\d+) groups=(?P<groups>\S*)")
+ACT4_SPIKE_GROUP_COUNTS_RE = re.compile(r"P1_ACT4_SPIKE_GROUP_COUNTS: groups=(?P<groups>\S*)")
+ACT4_SPIKE_TEST_RE = re.compile(r"ACT4_SPIKE_TEST: PASS test=(?P<test>\S+) logdir=(?P<logdir>.+)")
 ACT4_SPIKE_RE = re.compile(
     r"P1_ACT4_SPIKE: (?P<status>PASS|FAIL) tests=(?P<tests>\d+) "
     r"passed=(?P<passed>\d+) failed=(?P<failed>\d+) logdir=(?P<logdir>.+)"
@@ -40,6 +42,31 @@ def rel(path, root):
         return str(path.relative_to(root))
     except ValueError:
         return str(path)
+
+
+def act4_test_group(test):
+    return test.split("/", 1)[0] if "/" in test else test.split("-", 1)[0]
+
+
+def parse_act4_group_counts(text):
+    groups = []
+    for chunk in text.split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        if "=" not in chunk:
+            continue
+        group, value = chunk.split("=", 1)
+        groups.append({"group": group, "tests": int(value, 0)})
+    return groups
+
+
+def act4_group_counts_from_tests(tests):
+    counts = {}
+    for test in tests:
+        group = act4_test_group(test)
+        counts[group] = counts.get(group, 0) + 1
+    return [{"group": group, "tests": count} for group, count in counts.items()]
 
 
 def parse_log(path):
@@ -78,6 +105,8 @@ def parse_log(path):
     spike_entries = []
     current_spike_test = None
     current_act4_groups = None
+    current_act4_group_tests = None
+    current_act4_passed_tests = []
     for line in text.splitlines():
         match = ACT4_SPIKE_GROUPS_RE.search(line)
         if match:
@@ -86,6 +115,14 @@ def parse_log(path):
                 "group_count": int(match.group("count")),
                 "groups": groups,
             }
+            continue
+        match = ACT4_SPIKE_GROUP_COUNTS_RE.search(line)
+        if match:
+            current_act4_group_tests = parse_act4_group_counts(match.group("groups"))
+            continue
+        match = ACT4_SPIKE_TEST_RE.search(line)
+        if match:
+            current_act4_passed_tests.append(match.group("test"))
             continue
         match = ACT4_SPIKE_RE.search(line)
         if match:
@@ -99,6 +136,11 @@ def parse_log(path):
             if current_act4_groups:
                 item.update(current_act4_groups)
                 current_act4_groups = None
+            group_tests = current_act4_group_tests or act4_group_counts_from_tests(current_act4_passed_tests)
+            if group_tests:
+                item["group_tests"] = group_tests
+            current_act4_group_tests = None
+            current_act4_passed_tests = []
             metrics["act4_spike"].append(item)
             continue
         header = SPIKE_PREFIX_HEADER_RE.match(line)
@@ -321,9 +363,16 @@ def main():
         lines += ["", "## ACT/Spike Smoke"]
         for item in summary["act4_spike"]:
             groups_text = ",".join(item.get("groups", [])) or "-"
+            group_tests_text = ",".join(
+                f"{group.get('group')}={group.get('tests')}"
+                for group in item.get("group_tests", [])
+                if group.get("group")
+            ) or "-"
             lines.append(
-                "- status={status} tests={tests} passed={passed} failed={failed} groups={groups_text} source=`{source}`".format(
+                "- status={status} tests={tests} passed={passed} failed={failed} groups={groups_text} "
+                "group_tests={group_tests_text} source=`{source}`".format(
                     groups_text=groups_text,
+                    group_tests_text=group_tests_text,
                     **item,
                 )
             )

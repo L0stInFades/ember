@@ -170,10 +170,10 @@ of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
 artifacts, P0 Linux login evidence with a default 9B-cycle ceiling, exact P1
 external test composition across summary/dashboard/history artifacts, 39 P1
-external per-test floors, 40 MHz PnR evidence, RVTRACE aggregate counts, and 48
-RVTRACE per-test coverage-floor checks. The
-current dashboard in this worktree scans 80 summaries, retains 80 history
-records, has an 11-run pass streak, and tracks the latest P0 Linux evidence with
+external per-test floors, exact ACT/Spike group counts, 40 MHz PnR evidence,
+RVTRACE aggregate counts, and 48 RVTRACE per-test coverage-floor checks. The
+current dashboard in this worktree scans 82 summaries, retains 82 history
+records, has a 13-run pass streak, and tracks the latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, latest retained RVTRACE audit/coverage,
 latest CI evidence health, best PnR Fmax, profile counts, floor-check status,
 latest run per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
@@ -535,6 +535,17 @@ quick `pass=1 fail=0`, and hosted P1 external
 with `ret=70670`, `trap_exceptions=23`, `terminal_traps=1`, `misalign`
 terminal-trap coverage, `amo_mmu` at 5,965 retired rows / 2 trap exceptions, and
 106/106 ACT/Spike tests across the expected 12 groups.
+The ACT/Spike evidence path now also retains exact selected test counts per
+extension group: `I=39,M=8,Zmmul=4,Zaamo=9,Zalrsc=2,Zca=26,Zicsr=6,Zicntr=2,Zifencei=1,Zihintpause=1,Zihintntl=4,ZihintntlZca=4`.
+`tools/run_act4_spike_smoke.sh` emits `P1_ACT4_SPIKE_GROUP_COUNTS`,
+`tools/collect_ci_metrics.py` can also infer those counts from existing
+`ACT4_SPIKE_TEST` lines, and dashboard/history retain the resulting
+`group_tests`. `tools/check_ci_dashboard.py` also resolves hosted artifact
+summaries by scanning the dashboard root for a matching internal `logdir`, so
+nested GitHub downloads remain checkable after they leave the recent-run table.
+Local `logs/ci-evidence-health-20260629-act4-group-counts-v2` passes 95/95
+checks; a negative `--require-p1-act4-spike-group-counts` with `Zca=25` fails
+against the retained `Zca=26` count.
 
 ---
 

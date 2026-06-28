@@ -59,15 +59,20 @@ if [ -z "$TESTS" ]; then
 fi
 [ -n "$TESTS" ] || { echo "no ACT RV32 tests selected" >&2; exit 1; }
 
+act_test_group() {
+  local test=$1
+  if [[ "$test" == */* ]]; then
+    printf '%s\n' "${test%%/*}"
+  else
+    printf '%s\n' "${test%%-*}"
+  fi
+}
+
 selected_act_groups() {
   local test group groups
   groups=""
   for test in $TESTS; do
-    if [[ "$test" == */* ]]; then
-      group=${test%%/*}
-    else
-      group=${test%%-*}
-    fi
+    group=$(act_test_group "$test")
     case " $groups " in
       *" $group "*) ;;
       *) groups="${groups:+$groups }$group" ;;
@@ -76,10 +81,29 @@ selected_act_groups() {
   printf '%s\n' "$groups"
 }
 
+selected_act_group_counts() {
+  local test group selected_group count sep
+  sep=""
+  for group in $ACT_GROUP_LIST; do
+    count=0
+    for test in $TESTS; do
+      selected_group=$(act_test_group "$test")
+      if [ "$selected_group" = "$group" ]; then
+        count=$((count + 1))
+      fi
+    done
+    printf '%s%s=%d' "$sep" "$group" "$count"
+    sep=,
+  done
+  printf '\n'
+}
+
 ACT_GROUP_LIST=$(selected_act_groups)
 ACT_GROUP_COUNT=$(set -- $ACT_GROUP_LIST; printf '%s\n' "$#")
 ACT_GROUP_CSV=$(printf '%s\n' $ACT_GROUP_LIST | paste -sd, -)
+ACT_GROUP_COUNTS_CSV=$(selected_act_group_counts)
 echo "P1_ACT4_SPIKE_GROUPS: count=$ACT_GROUP_COUNT groups=$ACT_GROUP_CSV"
+echo "P1_ACT4_SPIKE_GROUP_COUNTS: groups=$ACT_GROUP_COUNTS_CSV"
 
 find_test_src() {
   local test=$1

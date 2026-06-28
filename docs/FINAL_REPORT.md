@@ -133,7 +133,8 @@ regression:
   (`isa,amotest,ctest,shtest,mtest,mmu,utrap,misalign,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`),
   checks the same list from summary/dashboard/history artifacts, requires 23
   ordinary trap-exception checks, one terminal trap, 39 P1 external per-test
-  floors, 106 ACT/Spike smoke tests, and the exact default group list
+  floors, 106 ACT/Spike smoke tests, the exact default group list, and exact
+  per-group selected test counts
   (`I,M,Zmmul,Zaamo,Zalrsc,Zca,Zicsr,Zicntr,Zifencei,Zihintpause,Zihintntl,ZihintntlZca`).
 - The P0 Linux evidence path now retains the synth-shell boot-to-login cycle
   point. `verify_p0_linux.sh` emits `P0_LINUX_BOOT`, summaries/dashboard/trend
@@ -1218,6 +1219,17 @@ same 17-test Spike-prefix set with `ret=70670`, `trap_exceptions=23`,
 `terminal_traps=1`, `misalign` terminal-trap coverage, `amo_mmu` at 5,965
 retired rows / 2 trap exceptions, and 106/106 ACT/Spike tests across the
 expected 12 groups.
+The ACT/Spike metrics path now records exact selected test counts per extension
+group: `I=39,M=8,Zmmul=4,Zaamo=9,Zalrsc=2,Zca=26,Zicsr=6,Zicntr=2,Zifencei=1,Zihintpause=1,Zihintntl=4,ZihintntlZca=4`.
+The smoke script emits `P1_ACT4_SPIKE_GROUP_COUNTS`, metrics can also infer the
+same counts from retained `ACT4_SPIKE_TEST` lines, dashboard/history keep
+`group_tests`, and local `logs/ci-evidence-health-20260629-act4-group-counts`
+passes 95/95 checks. The final local evidence run
+`logs/ci-evidence-health-20260629-act4-group-counts-v2` also passes 95/95 after
+adding a dashboard-root fallback that resolves hosted artifact summaries by
+matching their internal `logdir` once they have fallen out of the recent-run
+table. A negative `--require-p1-act4-spike-group-counts` with `Zca=25` fails
+against the retained `Zca=26` count.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on

@@ -21,6 +21,21 @@ DEFAULT_P1_ACT4_SPIKE_GROUPS = [
     "ZihintntlZca",
 ]
 
+DEFAULT_P1_ACT4_SPIKE_GROUP_COUNTS = {
+    "I": 39,
+    "M": 8,
+    "Zmmul": 4,
+    "Zaamo": 9,
+    "Zalrsc": 2,
+    "Zca": 26,
+    "Zicsr": 6,
+    "Zicntr": 2,
+    "Zifencei": 1,
+    "Zihintpause": 1,
+    "Zihintntl": 4,
+    "ZihintntlZca": 4,
+}
+
 DEFAULT_P1_EXTERNAL_TESTS = [
     "isa",
     "amotest",
@@ -70,6 +85,40 @@ def format_p1_external_test_floors(floors):
         rules = ",".join(f"{field}={value}" for field, value in fields.items())
         chunks.append(f"{test}:{rules}")
     return ";".join(chunks)
+
+
+def format_group_counts(counts):
+    return ",".join(f"{group}={count}" for group, count in counts.items())
+
+
+def parse_group_counts(text):
+    counts = {}
+    if not text.strip():
+        return counts
+    for chunk in text.split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        if "=" not in chunk:
+            raise SystemExit(f"invalid group count {chunk!r}: expected group=count")
+        group, value_text = chunk.split("=", 1)
+        group = group.strip()
+        if not group:
+            raise SystemExit(f"invalid group count {chunk!r}: empty group")
+        try:
+            counts[group] = int(value_text.strip(), 0)
+        except ValueError as exc:
+            raise SystemExit(f"invalid group count value {value_text!r} for {group}") from exc
+    return counts
+
+
+def act4_group_count_map(items):
+    counts = {}
+    for item in items or []:
+        group = item.get("group")
+        if group:
+            counts[group] = int(item.get("tests", 0))
+    return counts
 
 
 def parse_p1_external_test_floors(text):
@@ -152,6 +201,23 @@ def recent_summary(dashboard, logdir):
     return None
 
 
+def find_summary_by_logdir(dashboard, logdir):
+    root = dashboard.get("root")
+    if not root:
+        return None, None
+    root_path = Path(root)
+    if not root_path.is_dir():
+        return None, None
+    for path in root_path.rglob("summary.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(data, dict) and data.get("logdir") == logdir:
+            return data, str(path)
+    return None, None
+
+
 def load_summary(dashboard, logdir):
     if not logdir:
         return None, None
@@ -160,6 +226,9 @@ def load_summary(dashboard, logdir):
         data = load_json(path)
         if isinstance(data, dict):
             return data, str(path)
+    data, source = find_summary_by_logdir(dashboard, logdir)
+    if data:
+        return data, source
     item = recent_summary(dashboard, logdir)
     if item:
         return item, "dashboard.recent"
@@ -237,6 +306,11 @@ def main():
         "--require-p1-act4-spike-groups",
         default=",".join(DEFAULT_P1_ACT4_SPIKE_GROUPS),
         help="comma-separated exact ACT/Spike group list required for the latest P1 evidence; empty disables",
+    )
+    ap.add_argument(
+        "--require-p1-act4-spike-group-counts",
+        default=format_group_counts(DEFAULT_P1_ACT4_SPIKE_GROUP_COUNTS),
+        help="comma-separated exact ACT/Spike group=count list required for the latest P1 evidence; empty disables",
     )
     ap.add_argument("--min-p1-external-trap-exceptions", type=int, default=23)
     ap.add_argument("--min-p1-external-terminal-traps", type=int, default=1)
@@ -516,6 +590,19 @@ def main():
                     "groups={actual} required={required}".format(
                         actual=",".join(actual_act4_groups) or "missing",
                         required=",".join(required_act4_groups),
+                    ),
+                    p1_source,
+                )
+            required_act4_group_counts = parse_group_counts(args.require_p1_act4_spike_group_counts)
+            if required_act4_group_counts:
+                actual_act4_group_counts = act4_group_count_map(latest_act4.get("group_tests", []))
+                add_check(
+                    checks,
+                    "P1 ACT/Spike smoke group counts",
+                    actual_act4_group_counts == required_act4_group_counts,
+                    "groups={actual} required={required}".format(
+                        actual=format_group_counts(actual_act4_group_counts) or "missing",
+                        required=format_group_counts(required_act4_group_counts),
                     ),
                     p1_source,
                 )
