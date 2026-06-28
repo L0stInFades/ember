@@ -94,6 +94,12 @@ continue using the old PA until `tlb_flush`, then proves the flush forces a fres
 walk to the new PA and performs the expected A-bit update. The local Icarus run
 passes with `MEM_BOUNDARY_RESULT: PASS` in
 `logs/ci-mem-boundary-tlb-remap-20260629/tb_rvlinux_mem_boundary.log`. The
+min-core CSR-to-boundary flush path is now covered too:
+`tb_rvlinux_min_core_tlb_flush.v` executes `csrw satp`, enters S-mode, loads through
+Sv32, executes `sfence.vma`, then loads the same VA again; the regression observes
+two `tlb_flush` pulses (`satp=1`, `sfence=1`) and two data-VA PTW starts, passing
+with `MIN_CORE_TLB_FLUSH_RESULT: PASS` in
+`logs/ci-min-core-tlb-flush-20260629/tb_rvlinux_min_core_tlb_flush.log`. The
 current `RVLINUX_SYNTH_SHELL` small-IO top wrapper also has fresh tool evidence:
 `yosys synth_rvlinux_synth_shell_top.ys` reports 32 DP16KD, 10902 LUT4, 5118 FF,
 108 TRELLIS_DPR16X4, and 0 check problems, and
@@ -159,7 +165,7 @@ of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
 artifacts, P0 Linux login evidence, 40 MHz PnR evidence, RVTRACE aggregate counts,
 and 46 per-test coverage-floor checks. The current dashboard in this worktree
-scans 27 summaries, retains 27 history records, has a 3-run pass streak, and tracks the latest P0 Linux
+scans 28 summaries, retains 28 history records, has a 4-run pass streak, and tracks the latest P0 Linux
 evidence, latest retained RVTRACE audit/coverage, latest CI evidence health, best
 PnR Fmax, profile counts, floor-check status, latest run per profile, and recent
 runs. `verify_ci.sh` refreshes this dashboard and trend history after every profile,

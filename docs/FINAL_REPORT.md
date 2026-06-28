@@ -419,13 +419,21 @@ mapped to syscon PA `0x11100000`. UART emits `0x42`, UART LSR returns `0x60` int
 `x6`/`x10`, syscon halts with `exit_code=0`, the run ends in S-mode at `pc=0x60`
 after 18 retired instructions, and the boundary reports 3 hardware A/D updates.
 
-Verified (`MIN_CORE_MPRV_RESULT: PASS`) with a fifth backing-memory program: M-mode
+Verified (`MIN_CORE_TLB_FLUSH_RESULT: PASS`) with a dedicated backing-memory
+program: M-mode writes `satp`, enters S-mode, loads from an Sv32 data VA, executes
+`sfence.vma`, then loads the same VA again. The test observes exactly two
+core-generated `tlb_flush` pulses (`satp=1`, `sfence=1`) and two PTW starts for the
+data VA, proving the min-core CSR path drives the boundary flush used by the retained
+split ITLB/DTLB. The local run passed in
+`logs/ci-min-core-tlb-flush-20260629/tb_rvlinux_min_core_tlb_flush.log`.
+
+Verified (`MIN_CORE_MPRV_RESULT: PASS`) with an MPRV backing-memory program: M-mode
 enables Sv32, sets `mstatus.MPRV=1` and `MPP=S` while leaving `SUM=0`, then executes
 an M-mode `LW` from a U page at VA `0x1000`. Correct behavior is a load page fault
 using S-mode data permissions, so the trap returns to the M handler with
 `mcause=13`, `mtval=0x1000`, `x10=13`, and the attempted load destination still zero.
 
-Verified (`MIN_CORE_INTERRUPT_RESULT: PASS`) with a sixth backing-memory program:
+Verified (`MIN_CORE_INTERRUPT_RESULT: PASS`) with an interrupt backing-memory program:
 M-mode delegates supervisor external interrupts, enables `mie.SEIE`, enters S-mode,
 configures UART source 1 through the PLIC priority/enable/threshold registers, enables
 UART RX interrupt generation, and sets `sstatus.SIE`. The testbench injects UART RX
@@ -882,7 +890,7 @@ dashboard/history files, a passing streak, retained P0 Linux login evidence, ret
 PnR evidence at or above the 40 MHz target, retained RVTRACE coverage for 16 tests
 with at least 70,000 retired instructions, 25 traps, 6 AMOs, 12 PTE updates,
 25 privilege switches, and 46 passing per-test floor checks. The
-`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-tlb-remap`, writing
+`./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-min-core-tlb-flush`, writing
 `ci_health.json` / `ci_health.md` with 36/36 checks passing; negative checks also
 failed as intended for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`,
 `mxr:retired=6000`, `upage:retired=10000`, `ifault:retired=10000`, and
@@ -903,13 +911,13 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 27 summaries scanned, 27 retained history runs, a 3-run pass streak,
-profile counts of `evidence-health=9`, `p0-evidence=1`, `p1-trace-audit=10`, and
-`quick=7`, 10 RVTRACE coverage artifact runs, 9 CI evidence
+reports 28 summaries scanned, 28 retained history runs, a 4-run pass streak,
+profile counts of `evidence-health=10`, `p0-evidence=1`, `p1-trace-audit=10`, and
+`quick=7`, 10 RVTRACE coverage artifact runs, 10 CI evidence
 health runs, latest P0 Linux evidence from
 `logs/ci-p0-evidence-20260628-233213`, latest RVTRACE audit/coverage from
 `logs/ci-p1-trace-audit-20260629-amo-mmu`, latest CI evidence health from
-`logs/ci-evidence-health-20260629-tlb-remap`, and best PnR at **53.94 MHz** for the
+`logs/ci-evidence-health-20260629-min-core-tlb-flush`, and best PnR at **53.94 MHz** for the
 40 MHz target. The latest coverage table shows 46/46 floor checks passing:
 `isa`/`amotest` plus `amo_mmu` cover the 6 AMOs, `mmu` covers the original PTE
 update and 3 traps,

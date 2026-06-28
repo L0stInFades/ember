@@ -143,6 +143,9 @@ run_step cache bash -lc '
   iverilog -g2012 -o /tmp/tb_rvlinux_min_core_translated_mmio cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_translated_mmio.v
   vvp /tmp/tb_rvlinux_min_core_translated_mmio | tee /tmp/tb_rvlinux_min_core_translated_mmio.log
   grep -q "MIN_CORE_TRANSLATED_MMIO_RESULT: PASS" /tmp/tb_rvlinux_min_core_translated_mmio.log
+  iverilog -g2012 -o /tmp/tb_rvlinux_min_core_tlb_flush cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_tlb_flush.v
+  vvp /tmp/tb_rvlinux_min_core_tlb_flush | tee /tmp/tb_rvlinux_min_core_tlb_flush.log
+  grep -q "MIN_CORE_TLB_FLUSH_RESULT: PASS" /tmp/tb_rvlinux_min_core_tlb_flush.log
   iverilog -g2012 -o /tmp/tb_rvlinux_min_core_mprv cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_mprv.v
   vvp /tmp/tb_rvlinux_min_core_mprv | tee /tmp/tb_rvlinux_min_core_mprv.log
   grep -q "MIN_CORE_MPRV_RESULT: PASS" /tmp/tb_rvlinux_min_core_mprv.log
