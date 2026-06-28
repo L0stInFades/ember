@@ -412,6 +412,11 @@ The upstream `Zicsr` ACT group is deliberately kept out of the default smoke for
 now because its no-`C` MARCH metadata exposed a `mepc`/`sepc` WARL low-bit
 expectation mismatch with Ember's compressed-instruction decode path; that is a
 separate correctness item rather than a coverage count to hide.
+The pushed source commit `16f0b80` passed hosted macOS CI as run
+`28336556293`: quick `pass=1 fail=0`, retained RVTRACE audit remains green, and
+the hosted P1 external artifact `logs/github-p1-external-28336556293` records
+the same 17-test Spike-prefix gate (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus 85/85 ACT/Spike smoke tests.
 
 ---
 
