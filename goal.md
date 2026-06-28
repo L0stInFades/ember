@@ -529,6 +529,12 @@ is required to remain the terminal-trap test. Local
 `logs/ci-evidence-health-20260629-p1-per-test-floors` passes 94/94 checks, and a
 negative `--require-p1-external-test-floors amo_mmu:ret=6000` check fails against
 the retained `amo_mmu` value of 5,965 retired rows.
+The pushed source commit `436c619` passed hosted macOS CI as run `28339606080`:
+quick `pass=1 fail=0`, and hosted P1 external
+`logs/github-p1-external-28339606080` retains the same 17-test Spike-prefix set
+with `ret=70670`, `trap_exceptions=23`, `terminal_traps=1`, `misalign`
+terminal-trap coverage, `amo_mmu` at 5,965 retired rows / 2 trap exceptions, and
+106/106 ACT/Spike tests across the expected 12 groups.
 
 ---
 
