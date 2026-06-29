@@ -179,11 +179,11 @@ ceiling, exact P1 external test composition across summary/dashboard/history
 artifacts, 39 P1 external per-test floors, exact ACT/Spike group counts, exact
 RVTRACE coverage test composition across summary/dashboard/history artifacts, 40
 MHz PnR evidence, RVTRACE aggregate counts, and 48 RVTRACE per-test
-coverage-floor checks. The current dashboard in this worktree scans 98
-summaries, retains 98 history records, has a 29-run pass streak, and tracks the
+coverage-floor checks. The current dashboard in this worktree scans 102
+summaries, retains 102 history records, has a 33-run pass streak, and tracks the
 latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, the latest imported hosted RVTRACE
-audit/coverage and P1 external evidence from run `28341494649`, latest CI
+audit/coverage and P1 external evidence from run `28341807002`, latest CI
 evidence health, best PnR Fmax, profile counts, floor-check status, latest run
 per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
 and trend history after every profile,
@@ -660,6 +660,17 @@ against the current `28341494649` evidence. The formal
 `logs/ci-evidence-health-20260629-github-import-binding` profile passes 117/117
 and refreshes the dashboard to 98 summaries, 98 history records, and a 29-run
 pass streak.
+The source commit `838e27b` that added those binding checks passed hosted CI as
+run `28341807002`: quick regression completed in 1m48s and P1 external completed
+in 3m22s. Running `python3 tools/import_github_run_artifacts.py 28341807002`
+imports 2 artifacts and 3 summaries into `logs/github-run-28341807002`, records
+head SHA `838e27bdebccacb3659fd7af57048744dcba7150`, and refreshes the dashboard
+to 101/101 with latest quick, P1 external, RVTRACE, and RVTRACE coverage evidence
+all coming from run `28341807002`. The default evidence-health checker passes
+117/117 over that self-imported evidence with a 32-run pass streak, and the formal
+`logs/ci-evidence-health-20260629-github-import-binding-self` profile passes
+117/117 and refreshes the dashboard to 102 summaries, 102 history records, and a
+33-run pass streak.
 
 ---
 
