@@ -170,10 +170,11 @@ of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
 artifacts, P0 Linux login evidence with a default 9B-cycle ceiling, exact P1
 external test composition across summary/dashboard/history artifacts, 39 P1
-external per-test floors, exact ACT/Spike group counts, 40 MHz PnR evidence,
+external per-test floors, exact ACT/Spike group counts, exact RVTRACE coverage
+test composition across summary/dashboard/history artifacts, 40 MHz PnR evidence,
 RVTRACE aggregate counts, and 48 RVTRACE per-test coverage-floor checks. The
-current dashboard in this worktree scans 83 summaries, retains 83 history
-records, has a 14-run pass streak, and tracks the latest P0 Linux evidence with
+current dashboard in this worktree scans 84 summaries, retains 84 history
+records, has a 15-run pass streak, and tracks the latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, latest retained RVTRACE audit/coverage,
 latest CI evidence health, best PnR Fmax, profile counts, floor-check status,
 latest run per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
@@ -570,6 +571,18 @@ regression in 1m52s and P1 external in 10m46s. Its downloaded
 retains `test_names_count=106` with first tests
 `I/I-add-00,I/I-addi-00,I/I-and-00` and final tests
 `ZihintntlZca/ZihintntlZca-c.ntl.p1-00,ZihintntlZca/ZihintntlZca-c.ntl.pall-00,ZihintntlZca/ZihintntlZca-c.ntl.s1-00`.
+The RVTRACE coverage evidence chain now also retains the exact 17-test directed
+coverage list, not only aggregate counts/floors. `tools/render_ci_dashboard.py`
+publishes `latest_rvtrace_coverage_tests` in the dashboard and
+`history.rvtrace_coverage.latest_tests` in the trend summary, while
+`tools/check_ci_dashboard.py` defaults
+`--require-rvtrace-coverage-tests` to
+`isa,amotest,mmu,ctest,shtest,mtest,misalign,utrap,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`
+and checks the latest summary, dashboard, and history copies. Local
+`logs/ci-evidence-health-20260629-rvtrace-test-list` passes 101/101 checks; a
+negative list with `amo_mmu` replaced by `BAD` fails the three RVTRACE coverage
+list checks. The refreshed dashboard now scans 84 summaries, retains 84 history
+runs, and has a 15-run pass streak.
 
 ---
 

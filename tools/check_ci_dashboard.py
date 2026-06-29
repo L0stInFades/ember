@@ -165,6 +165,26 @@ DEFAULT_P1_EXTERNAL_TESTS = [
     "amo_mmu",
 ]
 
+DEFAULT_RVTRACE_COVERAGE_TESTS = [
+    "isa",
+    "amotest",
+    "mmu",
+    "ctest",
+    "shtest",
+    "mtest",
+    "misalign",
+    "utrap",
+    "mprv",
+    "mxr",
+    "upage",
+    "ifault",
+    "wpfault",
+    "sum",
+    "badpte",
+    "superpage",
+    "amo_mmu",
+]
+
 DEFAULT_P1_EXTERNAL_TEST_FLOORS = {
     "isa": {"ret": 600},
     "amotest": {"ret": 450},
@@ -354,6 +374,10 @@ def coverage_floor_summary(coverage):
     return {"pass": len(checks) - failed, "fail": failed, "total": len(checks)}
 
 
+def coverage_test_names(coverage):
+    return [item.get("test") for item in coverage.get("tests", []) if item.get("test")]
+
+
 def add_check(checks, name, ok, detail, evidence=None):
     checks.append(
         {
@@ -440,6 +464,11 @@ def main():
     ap.add_argument("--min-rvtrace-pte-updates", type=int, default=12)
     ap.add_argument("--min-rvtrace-priv-switches", type=int, default=25)
     ap.add_argument("--min-rvtrace-floor-checks", type=int, default=48)
+    ap.add_argument(
+        "--require-rvtrace-coverage-tests",
+        default=",".join(DEFAULT_RVTRACE_COVERAGE_TESTS),
+        help="comma-separated exact RVTRACE coverage test list required for latest coverage evidence; empty disables",
+    )
     ap.add_argument("--no-require-p0-linux", action="store_true")
     ap.add_argument("--no-require-p1-external", action="store_true")
     ap.add_argument("--no-require-rvtrace", action="store_true")
@@ -931,6 +960,46 @@ def main():
                 args.min_rvtrace_priv_switches,
                 evidence=coverage_source,
             )
+            required_coverage_tests = [
+                test.strip()
+                for test in args.require_rvtrace_coverage_tests.split(",")
+                if test.strip()
+            ]
+            if required_coverage_tests:
+                actual_coverage_tests = coverage_test_names(coverage)
+                add_check(
+                    checks,
+                    "RVTRACE coverage test list",
+                    actual_coverage_tests == required_coverage_tests,
+                    "tests={actual} required={required}".format(
+                        actual=",".join(actual_coverage_tests) or "missing",
+                        required=",".join(required_coverage_tests),
+                    ),
+                    coverage_source,
+                )
+                dashboard_coverage_tests = dashboard.get("latest_rvtrace_coverage_tests") or []
+                add_check(
+                    checks,
+                    "RVTRACE coverage dashboard test list",
+                    dashboard_coverage_tests == required_coverage_tests,
+                    "tests={actual} required={required}".format(
+                        actual=",".join(dashboard_coverage_tests) or "missing",
+                        required=",".join(required_coverage_tests),
+                    ),
+                    str(dashboard_path),
+                )
+                history_coverage = history.get("rvtrace_coverage") if isinstance(history.get("rvtrace_coverage"), dict) else {}
+                history_coverage_tests = history_coverage.get("latest_tests") or []
+                add_check(
+                    checks,
+                    "RVTRACE coverage history test list",
+                    history_coverage_tests == required_coverage_tests,
+                    "tests={actual} required={required}".format(
+                        actual=",".join(history_coverage_tests) or "missing",
+                        required=",".join(required_coverage_tests),
+                    ),
+                    str(history_path),
+                )
 
     failures = [item for item in checks if item["status"] != "pass"]
     result = {

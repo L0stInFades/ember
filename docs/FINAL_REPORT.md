@@ -974,8 +974,8 @@ reading long logs. The same renderer now maintains a de-duplicated retained tren
 history in `logs/ci-history.jsonl` and a human-readable `logs/ci-trend.md`, tracking
 pass streak, profile counts, P0 Linux evidence/login count and login-cycle range,
 P1 external evidence count, RVTRACE audit/coverage counts, latest CI evidence
-health, latest per-test RVTRACE coverage/floor-check status, and PnR Fmax range
-across runs.
+health, latest per-test RVTRACE coverage/floor-check status, latest exact
+RVTRACE coverage test list, and PnR Fmax range across runs.
 `tools/check_ci_dashboard.py` turns those retained
 artifacts into a cheap evidence-health gate: by default it requires parse-clean
 dashboard/history files, a passing streak, retained P0 Linux login evidence under
@@ -984,7 +984,8 @@ retained P1 external Spike-prefix evidence for 17 tests with at least one termin
 trap, retained PnR evidence at or above the 40 MHz target, retained RVTRACE
 coverage for 17 tests with at least 71,000 retired instructions, 27 traps, 6
 AMOs, 12 PTE updates, 25 privilege switches, and 48 passing per-test floor
-checks. The
+checks, and the exact retained RVTRACE coverage test list across summary,
+dashboard, and history artifacts. The
 `./verify_ci.sh evidence-health` profile passed in `logs/ci-evidence-health-20260629-misalign`, writing
 `ci_health.json` / `ci_health.md` with 36/36 checks passing; negative checks also
 failed as intended for `--min-pnr-fmax-mhz 60`, `mprv:retired=6000`,
@@ -1252,6 +1253,15 @@ regression in 1m52s and P1 external in 10m46s. Its downloaded P1 artifact
 retains `test_names_count=106` with first tests
 `I/I-add-00,I/I-addi-00,I/I-and-00` and final tests
 `ZihintntlZca/ZihintntlZca-c.ntl.p1-00,ZihintntlZca/ZihintntlZca-c.ntl.pall-00,ZihintntlZca/ZihintntlZca-c.ntl.s1-00`.
+The retained RVTRACE coverage evidence chain now also fixes the exact directed
+test list. The dashboard exposes `latest_rvtrace_coverage_tests`, the trend
+summary exposes `history.rvtrace_coverage.latest_tests`, and evidence-health
+requires the same default 17-test order:
+`isa,amotest,mmu,ctest,shtest,mtest,misalign,utrap,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`.
+Local `logs/ci-evidence-health-20260629-rvtrace-test-list` passes 101/101
+checks, while a negative list with `amo_mmu` replaced by `BAD` fails against the
+latest summary, dashboard, and history checks. The refreshed dashboard scans 84
+summaries, retains 84 history runs, and has a 15-run pass streak.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
