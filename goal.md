@@ -162,7 +162,11 @@ status/login cycles, and PnR Fmax/resource metrics;
 publish `summary.md` into the Actions step summary. `tools/render_ci_dashboard.py`
 now builds cross-run `logs/ci-dashboard.json` / `logs/ci-dashboard.md` from those
 summary artifacts and maintains a de-duplicated retained trend history in
-`logs/ci-history.jsonl` plus `logs/ci-trend.md`. The RVTRACE audit now also writes
+`logs/ci-history.jsonl` plus `logs/ci-trend.md`. `tools/import_github_run_artifacts.py`
+downloads a selected GitHub Actions run into `logs/github-run-<run-id>/`, writes a
+small import manifest, and refreshes that same dashboard/history so hosted
+artifacts can be retained without a manual `/tmp` staging step. The RVTRACE audit
+now also writes
 per-test `rvtrace_coverage.json` / `rvtrace_coverage.md` artifacts that expose where
 the retained traps, AMOs, PTE updates, and privilege switches come from, and it now
 enforces default per-test coverage floors so those signals cannot silently move out
@@ -173,11 +177,12 @@ external test composition across summary/dashboard/history artifacts, 39 P1
 external per-test floors, exact ACT/Spike group counts, exact RVTRACE coverage
 test composition across summary/dashboard/history artifacts, 40 MHz PnR evidence,
 RVTRACE aggregate counts, and 48 RVTRACE per-test coverage-floor checks. The
-current dashboard in this worktree scans 84 summaries, retains 84 history
-records, has a 15-run pass streak, and tracks the latest P0 Linux evidence with
-its 8,716,611,501-cycle login point, latest retained RVTRACE audit/coverage,
-latest CI evidence health, best PnR Fmax, profile counts, floor-check status,
-latest run per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
+current dashboard in this worktree scans 88 summaries, retains 88 history
+records, has a 19-run pass streak, and tracks the latest P0 Linux evidence with
+its 8,716,611,501-cycle login point, the latest imported hosted RVTRACE
+audit/coverage and P1 external evidence from run `28340935386`, latest CI
+evidence health, best PnR Fmax, profile counts, floor-check status, latest run
+per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
 and trend history after every profile,
 and the GitHub workflows publish the per-run summary plus cross-run dashboard/trend
 artifacts.
@@ -595,6 +600,17 @@ privilege switches; the artifact `ci-dashboard.json` exposes the same list as
 checks. The downloaded P1 artifact `p1-external-logs-28340935386` remains green
 with the same 17 Spike-prefix tests (`ret=70670`, `trap_exceptions=23`,
 `terminal_traps=1`) plus ACT/Spike 106/106 across 12 groups.
+The hosted artifact import path is now scripted instead of ad hoc:
+`python3 tools/import_github_run_artifacts.py 28340935386` imported the same
+hosted run into `logs/github-run-28340935386`, recorded manifest metadata
+(`repo=L0stInFades/ember`, `headSha=fdd2e05e19b942b7ac2a18c85bbcaa1e65044d27`,
+`artifacts=2`, `summary_json_count=3`), and refreshed the dashboard to 87/87
+runs with the latest quick, P1 external, and RVTRACE evidence all pointing at
+that hosted run. A default `tools/check_ci_dashboard.py` pass over the refreshed
+retained evidence reports 101/101 checks. The formal
+`logs/ci-evidence-health-20260629-github-import` run then passes 101/101 checks
+and refreshes the dashboard to 88 summaries, 88 history records, and a 19-run
+pass streak.
 
 ---
 

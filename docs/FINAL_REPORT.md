@@ -976,6 +976,11 @@ pass streak, profile counts, P0 Linux evidence/login count and login-cycle range
 P1 external evidence count, RVTRACE audit/coverage counts, latest CI evidence
 health, latest per-test RVTRACE coverage/floor-check status, latest exact
 RVTRACE coverage test list, and PnR Fmax range across runs.
+`tools/import_github_run_artifacts.py` now makes hosted evidence ingestion
+repeatable: it downloads a selected GitHub Actions run into
+`logs/github-run-<run-id>/`, records a manifest, counts imported summaries, and
+refreshes the dashboard/history so hosted artifacts become first-class retained
+evidence.
 `tools/check_ci_dashboard.py` turns those retained
 artifacts into a cheap evidence-health gate: by default it requires parse-clean
 dashboard/history files, a passing streak, retained P0 Linux login evidence under
@@ -1272,6 +1277,17 @@ local RVTRACE-only health check over the downloaded dashboard passes 29/29
 checks. The downloaded P1 artifact `p1-external-logs-28340935386` stays green
 with the same 17 Spike-prefix tests (`ret=70670`, `trap_exceptions=23`,
 `terminal_traps=1`) and ACT/Spike 106/106 across 12 groups.
+The same run is now imported through the scripted retained-evidence path:
+`python3 tools/import_github_run_artifacts.py 28340935386` downloads 2 artifacts
+and 3 summaries into `logs/github-run-28340935386`, writes a manifest recording
+`repo=L0stInFades/ember`, `headSha=fdd2e05e19b942b7ac2a18c85bbcaa1e65044d27`,
+and refreshes the dashboard to 87 summaries / 87 history records with latest
+quick, P1 external, and RVTRACE evidence all pointing at that hosted run. A
+default `tools/check_ci_dashboard.py` pass over the refreshed retained evidence
+reports 101/101 checks. The formal
+`logs/ci-evidence-health-20260629-github-import` profile then passes 101/101 and
+refreshes the dashboard to 88 summaries, 88 history records, and a 19-run pass
+streak.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -1424,7 +1440,7 @@ Synthesis/PnR evidence:
 - Convert that no-net payload to hex and patch the DTB timebase to 400 MHz: `python3 bin2hex.py linux-build/fw_payload_sf_nonet.bin linux-build/fw_payload_sf_nonet.hex && SRC_BIN=linux-build/fw_payload_sf_nonet.bin linux-build/make_timebase_payload.sh 400000000 linux-build/fw_payload_sf_tb400m_nonet`
 - Standard synth-shell no-net boot-to-login run: `./run_synth_shell_nonet.sh` (add `--prepare-payload` if `linux-build/fw_payload_sf_nonet.bin` is missing; add `--no-build` to reuse an existing `obj_vtop_synth_linux_sf_tb400m_nonet/Vvtop`)
 - Explicit P0 Linux gate: `./verify_p0_linux.sh` for the full expensive boot-to-login run, `./verify_p0_linux.sh --smoke --reuse` for a quick OpenSBI harness/payload smoke, or `./verify_p0_linux.sh --check-logs=logs/run-synth-shell-nonet-default-login` to audit the retained full-run logs.
-- Profiled CI/nightly scheduler: `./verify_ci.sh quick` for the normal regression, `./verify_ci.sh pr` for quick plus P0 smoke, `P0_SMOKE_REUSE=1 ./verify_ci.sh p0-smoke` for a reused fast P0 Linux smoke, `./verify_ci.sh p0-audit` to audit retained login logs, `./verify_ci.sh p0-pnr-audit` to audit retained current PnR evidence, `./verify_ci.sh p0-evidence` to audit retained Linux+PnR evidence together, `./verify_ci.sh p1-trace-audit` to audit retained RVTRACE/ref-model evidence and write `rvtrace_coverage.json` / `rvtrace_coverage.md`, `./verify_ci.sh evidence-health` to check retained dashboard/history evidence and write `ci_health.json` / `ci_health.md`, `./verify_ci.sh p0-pnr` for current synth-shell top yosys+nextpnr, and `./verify_ci.sh nightly` for quick + P1 + P1 trace audit + P0 smoke + P0 PnR + full P0 Linux. Every profile now writes `summary.json` and `summary.md` under its `LOGDIR` and refreshes `logs/ci-dashboard.json`, `logs/ci-dashboard.md`, `logs/ci-history.jsonl`, and `logs/ci-trend.md`; the dashboard and trend history can also be regenerated manually with `python3 tools/render_ci_dashboard.py --root logs`.
+- Profiled CI/nightly scheduler: `./verify_ci.sh quick` for the normal regression, `./verify_ci.sh pr` for quick plus P0 smoke, `P0_SMOKE_REUSE=1 ./verify_ci.sh p0-smoke` for a reused fast P0 Linux smoke, `./verify_ci.sh p0-audit` to audit retained login logs, `./verify_ci.sh p0-pnr-audit` to audit retained current PnR evidence, `./verify_ci.sh p0-evidence` to audit retained Linux+PnR evidence together, `./verify_ci.sh p1-trace-audit` to audit retained RVTRACE/ref-model evidence and write `rvtrace_coverage.json` / `rvtrace_coverage.md`, `./verify_ci.sh evidence-health` to check retained dashboard/history evidence and write `ci_health.json` / `ci_health.md`, `./verify_ci.sh p0-pnr` for current synth-shell top yosys+nextpnr, and `./verify_ci.sh nightly` for quick + P1 + P1 trace audit + P0 smoke + P0 PnR + full P0 Linux. Every profile now writes `summary.json` and `summary.md` under its `LOGDIR` and refreshes `logs/ci-dashboard.json`, `logs/ci-dashboard.md`, `logs/ci-history.jsonl`, and `logs/ci-trend.md`; the dashboard and trend history can also be regenerated manually with `python3 tools/render_ci_dashboard.py --root logs`, and hosted Actions artifacts can be retained with `python3 tools/import_github_run_artifacts.py <run-id>`.
 - Automation wrappers: GitHub hosted quick plus P1 external CI is `.github/workflows/ci.yml`, self-hosted nightly CI is `.github/workflows/nightly.yml`, and local cron/launchd can use `tools/ci_cron.sh nightly` (for example `0 1 * * * cd /Users/Apple/ember && tools/ci_cron.sh nightly`), `tools/ci_cron.sh p0-evidence` for low-cost P0 evidence audits, `tools/ci_cron.sh p1-trace-audit` for retained P1 trace audits, or `tools/ci_cron.sh evidence-health` for cheap retained-evidence health checks between expensive runs.
 - WFI timer regression: `iverilog -g2012 -o /tmp/tb_rvlinux_min_core_wfi_timer cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_wfi_timer.v && vvp /tmp/tb_rvlinux_min_core_wfi_timer`
 - CLINT/CSR time regression: `iverilog -g2012 -o /tmp/tb_rvlinux_min_core_time_csr cache.v cache_client_arbiter2.v mem_arbiter2.v slowmem.v l1_mem_system.v sv32_ptw.v rvlinux_mem_boundary.v rvlinux_fetch_stage.v rvlinux_lsu_stage.v rvlinux_amo_stage.v rvlinux_stage_cluster.v rvlinux_decode_stage.v rvlinux_csr_trap_stage.v rvlinux_muldiv_stage.v rvlinux_mmio_stage.v rvlinux_min_core_fsm.v tb_rvlinux_min_core_time_csr.v && vvp /tmp/tb_rvlinux_min_core_time_csr`
