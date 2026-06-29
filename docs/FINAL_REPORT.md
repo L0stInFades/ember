@@ -1262,6 +1262,16 @@ Local `logs/ci-evidence-health-20260629-rvtrace-test-list` passes 101/101
 checks, while a negative list with `amo_mmu` replaced by `BAD` fails against the
 latest summary, dashboard, and history checks. The refreshed dashboard scans 84
 summaries, retains 84 history runs, and has a 15-run pass streak.
+Hosted CI run `28340935386` for source commit `fdd2e05` passed with quick
+regression in 1m59s and P1 external in 3m39s. The downloaded quick artifact
+`quick-logs-28340935386` records the exact RVTRACE coverage list in
+`github-p1-trace-audit-28340935386/summary.json`, `ci-dashboard.json`, and
+`ci-trend.md`, with 48/48 floor checks and totals of 17 tests, 71,683 retired
+instructions, 27 traps, 6 AMOs, 12 PTE updates, and 25 privilege switches. A
+local RVTRACE-only health check over the downloaded dashboard passes 29/29
+checks. The downloaded P1 artifact `p1-external-logs-28340935386` stays green
+with the same 17 Spike-prefix tests (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) and ACT/Spike 106/106 across 12 groups.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on

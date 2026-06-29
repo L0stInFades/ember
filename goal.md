@@ -583,6 +583,18 @@ and checks the latest summary, dashboard, and history copies. Local
 negative list with `amo_mmu` replaced by `BAD` fails the three RVTRACE coverage
 list checks. The refreshed dashboard now scans 84 summaries, retains 84 history
 runs, and has a 15-run pass streak.
+Hosted CI run `28340935386` for source commit `fdd2e05` passed with quick
+regression in 1m59s and P1 external in 3m39s. Its downloaded quick artifact
+`quick-logs-28340935386` includes `logs/github-p1-trace-audit-28340935386` with
+the exact RVTRACE coverage list above, 48/48 floor checks, and totals of 17
+tests, 71,683 retired instructions, 27 traps, 6 AMOs, 12 PTE updates, and 25
+privilege switches; the artifact `ci-dashboard.json` exposes the same list as
+`latest_rvtrace_coverage_tests` and
+`history.rvtrace_coverage.latest_tests`, and a local RVTRACE-only
+`tools/check_ci_dashboard.py` pass over the downloaded dashboard reports 29/29
+checks. The downloaded P1 artifact `p1-external-logs-28340935386` remains green
+with the same 17 Spike-prefix tests (`ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`) plus ACT/Spike 106/106 across 12 groups.
 
 ---
 
