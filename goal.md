@@ -562,6 +562,14 @@ regression in 1m37s and P1 external in 8m49s. Downloaded artifact
 17-test P1 external set with `ret=70670`, `trap_exceptions=23`,
 `terminal_traps=1`, and records ACT/Spike `group_tests` exactly as
 `I=39,M=8,Zmmul=4,Zaamo=9,Zalrsc=2,Zca=26,Zicsr=6,Zicntr=2,Zifencei=1,Zihintpause=1,Zihintntl=4,ZihintntlZca=4`.
+Hosted CI run `28340424330` for source commit `735c01f` passed with quick
+regression in 1m52s and P1 external in 10m46s. Its downloaded
+`github-p1-external-28340424330/summary.json` is `status=pass`, keeps the same
+17-test P1 external set with `ret=70670`, `trap_exceptions=23`,
+`terminal_traps=1`, records ACT/Spike 106/106 across the expected 12 groups, and
+retains `test_names_count=106` with first tests
+`I/I-add-00,I/I-addi-00,I/I-and-00` and final tests
+`ZihintntlZca/ZihintntlZca-c.ntl.p1-00,ZihintntlZca/ZihintntlZca-c.ntl.pall-00,ZihintntlZca/ZihintntlZca-c.ntl.s1-00`.
 
 ---
 
