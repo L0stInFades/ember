@@ -1303,13 +1303,23 @@ passes 101/101 over that imported evidence, and
 `logs/ci-evidence-health-20260629-github-import-self` passes 101/101, refreshing
 the dashboard to 92 summaries, 92 history records, and a 23-run pass streak.
 The imported hosted-run manifest is now a hard health gate. The refreshed
-dashboard exposes 2 imported GitHub runs, with latest import `28341253692`
-showing `conclusion=success`, 2 artifacts, and 3 summaries. The default checker
-passes 106/106 checks; a negative `--min-github-import-summaries 4` fails against
-the latest manifest's `summary_json_count=3`. The formal
+dashboard exposes imported GitHub runs through `github_import_runs`,
+`github_imports`, and `latest_github_import`; the default checker passes 106/106
+checks, and a negative `--min-github-import-summaries 4` fails against the latest
+manifest's `summary_json_count=3`. The formal
 `logs/ci-evidence-health-20260629-github-import-manifest` profile passes 106/106
 and refreshes the dashboard to 93 summaries, 93 history records, and a 24-run
-pass streak.
+pass streak. Source commit `f4240c6` then passed hosted CI run `28341494649`:
+quick regression in 1m26s and P1 external in 3m1s. Running
+`python3 tools/import_github_run_artifacts.py 28341494649` imports 2 artifacts and
+3 summaries into `logs/github-run-28341494649`, records head SHA
+`f4240c64cef12c503044571dfc7f5eeffbf34c2c`, and refreshes the dashboard to
+96 summaries / 96 history records with latest quick, P1 external, and RVTRACE
+evidence all coming from that hosted run. The default evidence-health checker
+passes 106/106 over that imported evidence with a 27-run pass streak, and
+`logs/ci-evidence-health-20260629-github-import-manifest-self` passes 106/106,
+refreshing the dashboard to 97 summaries, 97 history records, and a 28-run pass
+streak.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -1325,15 +1335,16 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 59 summaries scanned, 59 retained history runs, a 7-run pass streak,
-profile counts of `evidence-health=17`, `p0-evidence=1`, `p1=9`,
-`p1-trace-audit=17`, and `quick=15`, 9 P1 external evidence runs, 17 RVTRACE
-coverage artifact runs, 17 CI evidence health runs, latest P0 Linux evidence from
-`logs/ci-p0-evidence-20260628-233213`, latest P1 external evidence from
-`logs/ci-p1-20260629-trap-exceptions`, latest hosted RVTRACE audit/coverage from
-`logs/github-p1-trace-audit-28334435648`, latest CI evidence health from
-`logs/ci-evidence-health-20260629-trap-exceptions`, and best PnR at **53.94 MHz**
-for the 40 MHz target. The latest coverage table shows 48/48 floor checks passing:
+reports 97 summaries scanned, 97 retained history runs, a 28-run pass streak,
+profile counts of `evidence-health=35`, `p0-evidence=2`, `p1=19`,
+`p1-trace-audit=21`, and `quick=20`, 19 P1 external evidence runs, 21 RVTRACE
+coverage artifact runs, 35 CI evidence health runs, latest P0 Linux evidence from
+`logs/ci-p0-evidence-20260629-boot-cycles`, latest imported hosted P1 external
+evidence from `logs/github-p1-external-28341494649`, latest imported hosted
+RVTRACE audit/coverage from `logs/github-p1-trace-audit-28341494649`, latest CI
+evidence health from
+`logs/ci-evidence-health-20260629-github-import-manifest-self`, and best PnR at
+**53.94 MHz** for the 40 MHz target. The latest coverage table shows 48/48 floor checks passing:
 `isa`/`amotest` plus `amo_mmu` cover the 6 AMOs, `mmu` covers the original PTE
 update and 3 traps,
 `utrap` covers the user trap plus 3 privilege switches, and `mprv` contributes

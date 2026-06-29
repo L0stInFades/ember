@@ -178,11 +178,11 @@ ceiling, exact P1 external test composition across summary/dashboard/history
 artifacts, 39 P1 external per-test floors, exact ACT/Spike group counts, exact
 RVTRACE coverage test composition across summary/dashboard/history artifacts, 40
 MHz PnR evidence, RVTRACE aggregate counts, and 48 RVTRACE per-test
-coverage-floor checks. The current dashboard in this worktree scans 93
-summaries, retains 93 history records, has a 24-run pass streak, and tracks the
+coverage-floor checks. The current dashboard in this worktree scans 97
+summaries, retains 97 history records, has a 28-run pass streak, and tracks the
 latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, the latest imported hosted RVTRACE
-audit/coverage and P1 external evidence from run `28341253692`, latest CI
+audit/coverage and P1 external evidence from run `28341494649`, latest CI
 evidence health, best PnR Fmax, profile counts, floor-check status, latest run
 per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
 and trend history after every profile,
@@ -636,6 +636,18 @@ default. The refreshed default checker passes 106/106 checks; a negative
 `logs/ci-evidence-health-20260629-github-import-manifest` profile passes 106/106
 and refreshes the dashboard to 93 summaries, 93 history records, and a 24-run
 pass streak.
+The source commit `f4240c6` that made imported GitHub manifests a default health
+gate passed hosted CI as run `28341494649`: quick regression completed in 1m26s
+and P1 external completed in 3m1s. Running the committed importer on that same
+hosted run, `python3 tools/import_github_run_artifacts.py 28341494649`, imports
+2 artifacts and 3 summaries into `logs/github-run-28341494649`, records head SHA
+`f4240c64cef12c503044571dfc7f5eeffbf34c2c`, and refreshes the dashboard to
+96/96 with latest quick, P1 external, and RVTRACE evidence all coming from run
+`28341494649`. The default evidence-health checker passes 106/106 over that
+imported evidence with a 27-run pass streak, and the formal
+`logs/ci-evidence-health-20260629-github-import-manifest-self` profile passes
+106/106 and refreshes the dashboard to 97 summaries, 97 history records, and a
+28-run pass streak.
 
 ---
 
