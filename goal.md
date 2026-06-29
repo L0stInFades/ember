@@ -173,13 +173,14 @@ enforces default per-test coverage floors so those signals cannot silently move 
 of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
 artifacts, at least one successful imported GitHub run manifest with the expected
-hosted artifact/summary counts, P0 Linux login evidence with a default 9B-cycle
+hosted artifact/summary counts plus latest quick/P1/RVTRACE evidence bound to
+that same imported run, P0 Linux login evidence with a default 9B-cycle
 ceiling, exact P1 external test composition across summary/dashboard/history
 artifacts, 39 P1 external per-test floors, exact ACT/Spike group counts, exact
 RVTRACE coverage test composition across summary/dashboard/history artifacts, 40
 MHz PnR evidence, RVTRACE aggregate counts, and 48 RVTRACE per-test
-coverage-floor checks. The current dashboard in this worktree scans 97
-summaries, retains 97 history records, has a 28-run pass streak, and tracks the
+coverage-floor checks. The current dashboard in this worktree scans 98
+summaries, retains 98 history records, has a 29-run pass streak, and tracks the
 latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, the latest imported hosted RVTRACE
 audit/coverage and P1 external evidence from run `28341494649`, latest CI
@@ -648,6 +649,17 @@ imported evidence with a 27-run pass streak, and the formal
 `logs/ci-evidence-health-20260629-github-import-manifest-self` profile passes
 106/106 and refreshes the dashboard to 97 summaries, 97 history records, and a
 28-run pass streak.
+The imported-hosted-evidence gate now also proves the latest dashboard evidence is
+bound to the latest imported GitHub run, not just that a successful import exists:
+`tools/check_ci_dashboard.py` checks the expected quick, P1 external, RVTRACE,
+and RVTRACE coverage logdirs for run `28341494649`, and checks that their resolved
+`summary.json` sources live under `logs/github-run-28341494649`. The refreshed
+default checker passes 117/117 checks; a temporary dashboard with
+`latest_github_import` forced back to run `28341253692` fails 10 binding checks
+against the current `28341494649` evidence. The formal
+`logs/ci-evidence-health-20260629-github-import-binding` profile passes 117/117
+and refreshes the dashboard to 98 summaries, 98 history records, and a 29-run
+pass streak.
 
 ---
 

@@ -1319,7 +1319,16 @@ evidence all coming from that hosted run. The default evidence-health checker
 passes 106/106 over that imported evidence with a 27-run pass streak, and
 `logs/ci-evidence-health-20260629-github-import-manifest-self` passes 106/106,
 refreshing the dashboard to 97 summaries, 97 history records, and a 28-run pass
-streak.
+streak. The imported-hosted-evidence gate now also proves the latest dashboard
+evidence is bound to the latest imported GitHub run: `tools/check_ci_dashboard.py`
+checks the expected quick, P1 external, RVTRACE, and RVTRACE coverage logdirs for
+run `28341494649`, and checks that their resolved `summary.json` sources live
+under `logs/github-run-28341494649`. The refreshed default checker passes
+117/117 checks; a temporary dashboard with `latest_github_import` forced back to
+run `28341253692` fails 10 binding checks against the current `28341494649`
+evidence. `logs/ci-evidence-health-20260629-github-import-binding` passes
+117/117, refreshing the dashboard to 98 summaries, 98 history records, and a
+29-run pass streak.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
@@ -1335,15 +1344,15 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 97 summaries scanned, 97 retained history runs, a 28-run pass streak,
+reports 98 summaries scanned, 98 retained history runs, a 29-run pass streak,
 profile counts of `evidence-health=35`, `p0-evidence=2`, `p1=19`,
 `p1-trace-audit=21`, and `quick=20`, 19 P1 external evidence runs, 21 RVTRACE
-coverage artifact runs, 35 CI evidence health runs, latest P0 Linux evidence from
+coverage artifact runs, 36 CI evidence health runs, latest P0 Linux evidence from
 `logs/ci-p0-evidence-20260629-boot-cycles`, latest imported hosted P1 external
 evidence from `logs/github-p1-external-28341494649`, latest imported hosted
 RVTRACE audit/coverage from `logs/github-p1-trace-audit-28341494649`, latest CI
 evidence health from
-`logs/ci-evidence-health-20260629-github-import-manifest-self`, and best PnR at
+`logs/ci-evidence-health-20260629-github-import-binding`, and best PnR at
 **53.94 MHz** for the 40 MHz target. The latest coverage table shows 48/48 floor checks passing:
 `isa`/`amotest` plus `amo_mmu` cover the 6 AMOs, `mmu` covers the original PTE
 update and 3 traps,

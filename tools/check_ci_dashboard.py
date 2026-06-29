@@ -416,6 +416,61 @@ def latest_github_import(dashboard):
     return item if isinstance(item, dict) else {}
 
 
+def github_import_run_id(import_record):
+    run_id = import_record.get("run_id")
+    if run_id is None:
+        run = import_record.get("run") if isinstance(import_record.get("run"), dict) else {}
+        run_id = run.get("databaseId")
+    try:
+        return int(run_id)
+    except (TypeError, ValueError):
+        return None
+
+
+def github_import_root(import_record):
+    manifest_path = import_record.get("manifest_path")
+    if manifest_path:
+        return str(Path(manifest_path).parent)
+    run_id = github_import_run_id(import_record)
+    return f"logs/github-run-{run_id}" if run_id is not None else None
+
+
+def path_is_under(path, root):
+    if not path or not root or path == "dashboard.recent":
+        return False
+    try:
+        Path(path).resolve().relative_to(Path(root).resolve())
+        return True
+    except (OSError, ValueError):
+        return False
+
+
+def add_github_import_binding_check(
+    checks,
+    dashboard,
+    label,
+    actual_logdir,
+    expected_logdir,
+    import_root,
+    dashboard_path,
+):
+    add_check(
+        checks,
+        f"latest GitHub import {label} logdir",
+        actual_logdir == expected_logdir,
+        f"logdir={actual_logdir or 'none'} expected={expected_logdir}",
+        str(dashboard_path),
+    )
+    _summary, source = load_summary(dashboard, actual_logdir)
+    add_check(
+        checks,
+        f"latest GitHub import {label} source",
+        path_is_under(source, import_root),
+        f"source={source or 'none'} import_root={import_root or 'none'}",
+        source,
+    )
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dashboard", default="logs/ci-dashboard.json", help="dashboard JSON to check")
@@ -494,6 +549,11 @@ def main():
     history_records, history_errors = load_history(history_path)
     history = dashboard.get("history", {}) if isinstance(dashboard.get("history"), dict) else {}
     checks = []
+    latest_by_profile = (
+        dashboard.get("latest_by_profile")
+        if isinstance(dashboard.get("latest_by_profile"), dict)
+        else {}
+    )
 
     errors = dashboard.get("errors", [])
     add_check(checks, "dashboard parse warnings", not errors, f"errors={len(errors)}", str(dashboard_path))
@@ -570,6 +630,69 @@ def main():
                 args.min_github_import_summaries,
                 evidence=import_source,
             )
+            imported_run_id = github_import_run_id(latest_import)
+            import_root = github_import_root(latest_import)
+            add_check(
+                checks,
+                "latest GitHub import run id parsed",
+                imported_run_id is not None,
+                f"run_id={imported_run_id if imported_run_id is not None else 'none'}",
+                import_source,
+            )
+            if imported_run_id is not None:
+                expected_quick = f"logs/github-quick-{imported_run_id}"
+                expected_p1 = f"logs/github-p1-external-{imported_run_id}"
+                expected_trace = f"logs/github-p1-trace-audit-{imported_run_id}"
+                add_github_import_binding_check(
+                    checks,
+                    dashboard,
+                    "quick",
+                    latest_by_profile.get("quick"),
+                    expected_quick,
+                    import_root,
+                    dashboard_path,
+                )
+                add_github_import_binding_check(
+                    checks,
+                    dashboard,
+                    "P1 external",
+                    dashboard.get("latest_p1_external"),
+                    expected_p1,
+                    import_root,
+                    dashboard_path,
+                )
+                add_check(
+                    checks,
+                    "latest GitHub import P1 profile logdir",
+                    latest_by_profile.get("p1") == expected_p1,
+                    f"logdir={latest_by_profile.get('p1') or 'none'} expected={expected_p1}",
+                    str(dashboard_path),
+                )
+                add_github_import_binding_check(
+                    checks,
+                    dashboard,
+                    "RVTRACE",
+                    dashboard.get("latest_rvtrace"),
+                    expected_trace,
+                    import_root,
+                    dashboard_path,
+                )
+                add_check(
+                    checks,
+                    "latest GitHub import RVTRACE profile logdir",
+                    latest_by_profile.get("p1-trace-audit") == expected_trace,
+                    f"logdir={latest_by_profile.get('p1-trace-audit') or 'none'} expected={expected_trace}",
+                    str(dashboard_path),
+                )
+                add_github_import_binding_check(
+                    checks,
+                    dashboard,
+                    "RVTRACE coverage",
+                    dashboard.get("latest_rvtrace_coverage"),
+                    expected_trace,
+                    import_root,
+                    dashboard_path,
+                )
 
     if not args.no_require_p0_linux:
         check_min(
