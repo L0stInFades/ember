@@ -56,6 +56,9 @@ EXCEPTION_CAUSES = {
     "trap_store_page_fault": 15,
 }
 
+SYSCON_BASE = 0x11100000
+SYSCON_PASS_CODE = 0x5555
+
 
 def parse_int(text, base=0):
     try:
@@ -73,9 +76,25 @@ def parse_hex(text):
     return int(text, 16)
 
 
+def trace_row(row, line):
+    return {
+        "line": line,
+        "event": row["event"],
+        "pc": parse_hex(row["pc"]),
+        "instr": parse_hex(row["instr"]),
+        "priv": parse_int(row["priv"], 10),
+        "rd": parse_int(row["rd"], 10),
+        "wdata": parse_hex(row["wdata"]),
+        "next_pc": parse_hex(row["next_pc"]),
+        "cause": parse_hex(row["cause"]),
+        "tval": parse_hex(row["tval"]),
+    }
+
+
 def load_trace(path, max_rows, stop_before_pc, stop_after_first_trap):
     rows = []
     stopped_at = None
+    stopped_row = None
     with open(path, "r", encoding="ascii", newline="") as f:
         reader = csv.DictReader(f)
         if reader.fieldnames != FIELDS:
@@ -83,31 +102,19 @@ def load_trace(path, max_rows, stop_before_pc, stop_after_first_trap):
         for line, row in enumerate(reader, 2):
             if row["event"] not in ("RET", "TRAP"):
                 raise ValueError(f"{path}:{line}: bad RVTRACE event {row['event']!r}")
-            pc = parse_hex(row["pc"])
-            if stop_before_pc is not None and pc == stop_before_pc:
-                stopped_at = pc
+            parsed = trace_row(row, line)
+            if stop_before_pc is not None and parsed["pc"] == stop_before_pc:
+                stopped_at = parsed["pc"]
+                stopped_row = parsed
                 break
-            rows.append(
-                {
-                    "line": line,
-                    "event": row["event"],
-                    "pc": pc,
-                    "instr": parse_hex(row["instr"]),
-                    "priv": parse_int(row["priv"], 10),
-                    "rd": parse_int(row["rd"], 10),
-                    "wdata": parse_hex(row["wdata"]),
-                    "next_pc": parse_hex(row["next_pc"]),
-                    "cause": parse_hex(row["cause"]),
-                    "tval": parse_hex(row["tval"]),
-                }
-            )
+            rows.append(parsed)
             if stop_after_first_trap and row["event"] == "TRAP":
                 break
             if max_rows and len(rows) >= max_rows:
                 break
     if not rows:
         raise ValueError(f"{path}: trace contains no rows")
-    return rows, stopped_at
+    return rows, stopped_at, stopped_row
 
 
 def run_spike(args, needed_rows):
@@ -317,6 +324,38 @@ def compare_terminal_trap(trace_rows, spike_exception):
     return errors
 
 
+def compare_device_complete(trace_rows, stopped_row):
+    if stopped_row is None:
+        return ["device-complete mode requires --stop-before-pc to capture the completion store"]
+    if len(trace_rows) < 2:
+        return ["device-complete mode requires at least two rows before the completion store"]
+    errors = []
+    pass_code = trace_rows[-2]
+    syscon_addr = trace_rows[-1]
+    if pass_code["event"] != "RET" or pass_code["wdata"] != SYSCON_PASS_CODE:
+        errors.append(
+            "device-complete pass-code row mismatch "
+            f"line={pass_code['line']} wdata=0x{pass_code['wdata']:08x}"
+        )
+    if syscon_addr["event"] != "RET" or syscon_addr["wdata"] != SYSCON_BASE:
+        errors.append(
+            "device-complete syscon-address row mismatch "
+            f"line={syscon_addr['line']} wdata=0x{syscon_addr['wdata']:08x}"
+        )
+    if stopped_row["event"] != "RET":
+        errors.append(f"device-complete row must retire, got {stopped_row['event']}")
+    if (stopped_row["instr"] & 0x7F) != 0x23:
+        errors.append(f"device-complete row is not a store instr=0x{stopped_row['instr']:08x}")
+    if stopped_row["priv"] != 3:
+        errors.append(f"device-complete store must retire in M-mode, got priv={stopped_row['priv']}")
+    if stopped_row["rd"] != 0 or stopped_row["wdata"] != 0:
+        errors.append(
+            "device-complete store should not write an integer register "
+            f"rd={stopped_row['rd']} wdata=0x{stopped_row['wdata']:08x}"
+        )
+    return errors
+
+
 def format_value(field, value):
     if field in ("priv", "rd"):
         return str(value)
@@ -346,6 +385,11 @@ def main():
         action="store_true",
         help="run Spike with execution logs and compare non-terminal DUT TRAP rows against Spike exceptions",
     )
+    ap.add_argument(
+        "--expect-device-complete",
+        action="store_true",
+        help="expect --stop-before-pc to point at a clean syscon poweroff store",
+    )
     ap.add_argument("--instructions", type=int, help="exact Spike instruction limit")
     ap.add_argument("--spike-slack", type=int, default=1024, help="extra Spike commits beyond DUT rows")
     ap.add_argument("--timeout", type=int, default=30, help="Spike timeout in seconds")
@@ -356,7 +400,7 @@ def main():
         base = parse_int(args.base)
         stop_before_pc = parse_int(args.stop_before_pc) if args.stop_before_pc else None
         stop_after_first_trap = args.stop_after_first_trap or args.expect_terminal_trap
-        trace_rows, stopped_at = load_trace(args.trace, args.max_rows, stop_before_pc, stop_after_first_trap)
+        trace_rows, stopped_at, stopped_row = load_trace(args.trace, args.max_rows, stop_before_pc, stop_after_first_trap)
         needed_commits = sum(1 for row in trace_rows if row["event"] == "RET")
         spike_output = run_spike(args, needed_commits)
         spike_rows = parse_spike_commits(spike_output, base)
@@ -371,6 +415,8 @@ def main():
         )
         if args.expect_terminal_trap:
             errors.extend(compare_terminal_trap(trace_rows, parse_spike_exception(spike_output, base)))
+        if args.expect_device_complete:
+            errors.extend(compare_device_complete(trace_rows, stopped_row))
     except (OSError, RuntimeError, subprocess.TimeoutExpired, ValueError) as exc:
         print(f"SPIKE_TRACE_PREFIX: FAIL {exc}", file=sys.stderr)
         return 1
@@ -395,6 +441,7 @@ def main():
         + (f" stopped_before=0x{stopped_at:08x}" if stopped_at is not None else "")
         + (f" trap_exceptions={checked_traps}" if args.check_trap_exceptions else "")
         + (" terminal_trap=1" if args.expect_terminal_trap else "")
+        + (" device_complete=1" if args.expect_device_complete else "")
     )
     return 0
 

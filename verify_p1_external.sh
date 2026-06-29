@@ -216,6 +216,7 @@ PY
         --isa RV32IMA_Svadu \
         --instructions 40000 \
         --check-trap-exceptions \
+        --expect-device-complete \
         --stop-before-pc "$stop_pc"
     done
   fi

@@ -173,17 +173,19 @@ enforces default per-test coverage floors so those signals cannot silently move 
 of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
 artifacts, at least one successful imported GitHub run manifest with the expected
-hosted artifact/summary counts plus latest quick/P1/RVTRACE evidence bound to
+hosted artifact/summary counts plus resolvable quick/P1/RVTRACE summaries under
 that same imported run, P0 Linux login evidence with a default 9B-cycle
 ceiling, exact P1 external test composition across summary/dashboard/history
-artifacts, 39 P1 external per-test floors, exact ACT/Spike group counts, exact
+artifacts, 48 P1 external per-test floors including SV32 clean device-completion
+checks, exact ACT/Spike group counts, exact
 RVTRACE coverage test composition across summary/dashboard/history artifacts, 40
 MHz PnR evidence, RVTRACE aggregate counts, and 48 RVTRACE per-test
-coverage-floor checks. The current dashboard in this worktree scans 102
-summaries, retains 102 history records, has a 33-run pass streak, and tracks the
+coverage-floor checks. The current dashboard in this worktree scans 104
+summaries, retains 104 history records, has a 35-run pass streak, and tracks the
 latest P0 Linux evidence with
-its 8,716,611,501-cycle login point, the latest imported hosted RVTRACE
-audit/coverage and P1 external evidence from run `28341807002`, latest CI
+its 8,716,611,501-cycle login point, the latest P1 external evidence from
+`logs/ci-p1-20260629-device-complete`, the latest imported hosted RVTRACE
+audit/coverage from run `28341807002`, latest CI
 evidence health, best PnR Fmax, profile counts, floor-check status, latest run
 per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
 and trend history after every profile,
@@ -649,14 +651,12 @@ imported evidence with a 27-run pass streak, and the formal
 `logs/ci-evidence-health-20260629-github-import-manifest-self` profile passes
 106/106 and refreshes the dashboard to 97 summaries, 97 history records, and a
 28-run pass streak.
-The imported-hosted-evidence gate now also proves the latest dashboard evidence is
-bound to the latest imported GitHub run, not just that a successful import exists:
+The imported-hosted-evidence gate now also proves each imported GitHub run's own
+dashboard evidence can be resolved, not just that a successful import exists:
 `tools/check_ci_dashboard.py` checks the expected quick, P1 external, RVTRACE,
 and RVTRACE coverage logdirs for run `28341494649`, and checks that their resolved
 `summary.json` sources live under `logs/github-run-28341494649`. The refreshed
-default checker passes 117/117 checks; a temporary dashboard with
-`latest_github_import` forced back to run `28341253692` fails 10 binding checks
-against the current `28341494649` evidence. The formal
+default checker passes 117/117 checks. The formal
 `logs/ci-evidence-health-20260629-github-import-binding` profile passes 117/117
 and refreshes the dashboard to 98 summaries, 98 history records, and a 29-run
 pass streak.
@@ -671,6 +671,24 @@ all coming from run `28341807002`. The default evidence-health checker passes
 `logs/ci-evidence-health-20260629-github-import-binding-self` profile passes
 117/117 and refreshes the dashboard to 102 summaries, 102 history records, and a
 33-run pass streak.
+The SV32 Spike-prefix gate now makes clean device completion explicit.
+`tools/spike_trace_prefix.py --expect-device-complete` verifies that the compared
+prefix stops immediately before an M-mode syscon poweroff store, with the prior
+rows loading pass code `0x5555` and syscon base `0x11100000`; `verify_p1_external.sh`
+enables that check for `mprv`, `mxr`, `upage`, `ifault`, `wpfault`, `sum`,
+`badpte`, `superpage`, and `amo_mmu`. `tools/collect_ci_metrics.py` and
+`tools/render_ci_dashboard.py` retain `device_complete` per test and
+`device_completions` in the P1 external summary, while `tools/check_ci_dashboard.py`
+now requires 9 device completions by default plus per-test `device_complete=1`
+floors. Local positive evidence:
+`logs/ci-p1-20260629-device-complete` passes the full P1 profile with 17 external
+tests, 70,670 compared retired rows, 23 trap-exception checks, one terminal trap,
+and 9 device completions. Negative checks
+`--min-p1-external-device-completions 10` and
+`--require-p1-external-test-floors mxr:device_complete=2` fail as expected. The
+formal `logs/ci-evidence-health-20260629-device-complete` profile passes 125/125
+and refreshes the dashboard to 104 summaries, 104 history records, and a 35-run
+pass streak.
 
 ---
 

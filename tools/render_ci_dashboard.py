@@ -196,6 +196,7 @@ def p1_external_record(item):
                 "trap_exceptions": test.get("trap_exceptions", 0),
                 "spike_commits": test.get("spike_commits"),
                 "terminal_trap": bool(test.get("terminal_trap")),
+                "device_complete": bool(test.get("device_complete")),
             }
         )
     return {
@@ -208,6 +209,7 @@ def p1_external_record(item):
         "trap_exceptions": item.get("trap_exceptions", 0),
         "spike_commits": item.get("spike_commits"),
         "terminal_traps": item.get("terminal_traps"),
+        "device_completions": item.get("device_completions", 0),
         "tests": tests,
     }
 
@@ -539,7 +541,8 @@ def row(summary):
             f"{latest_p1.get('test_count', 0)} tests, "
             f"{latest_p1.get('ret', 0)} ret, "
             f"{latest_p1.get('trap_exceptions', 0)} trap-exc, "
-            f"{latest_p1.get('terminal_traps', 0)} term"
+            f"{latest_p1.get('terminal_traps', 0)} term, "
+            f"{latest_p1.get('device_completions', 0)} dev"
             f"{names_suffix}"
         )
     act4_spike = "-"

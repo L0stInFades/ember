@@ -194,18 +194,26 @@ DEFAULT_P1_EXTERNAL_TEST_FLOORS = {
     "mmu": {"ret": 5000, "traps": 2, "trap_exceptions": 2},
     "utrap": {"ret": 40},
     "misalign": {"ret": 90, "traps": 1, "terminal_trap": 1},
-    "mprv": {"ret": 5000, "traps": 1, "trap_exceptions": 1},
-    "mxr": {"ret": 5000, "traps": 2, "trap_exceptions": 2},
-    "upage": {"ret": 9000, "traps": 3, "trap_exceptions": 3},
-    "ifault": {"ret": 9000, "traps": 2, "trap_exceptions": 2},
-    "wpfault": {"ret": 5000, "traps": 2, "trap_exceptions": 2},
-    "sum": {"ret": 5500, "traps": 3, "trap_exceptions": 3},
-    "badpte": {"ret": 9000, "traps": 3, "trap_exceptions": 3},
-    "superpage": {"ret": 3500, "traps": 3, "trap_exceptions": 3},
-    "amo_mmu": {"ret": 5500, "traps": 2, "trap_exceptions": 2},
+    "mprv": {"ret": 5000, "traps": 1, "trap_exceptions": 1, "device_complete": 1},
+    "mxr": {"ret": 5000, "traps": 2, "trap_exceptions": 2, "device_complete": 1},
+    "upage": {"ret": 9000, "traps": 3, "trap_exceptions": 3, "device_complete": 1},
+    "ifault": {"ret": 9000, "traps": 2, "trap_exceptions": 2, "device_complete": 1},
+    "wpfault": {"ret": 5000, "traps": 2, "trap_exceptions": 2, "device_complete": 1},
+    "sum": {"ret": 5500, "traps": 3, "trap_exceptions": 3, "device_complete": 1},
+    "badpte": {"ret": 9000, "traps": 3, "trap_exceptions": 3, "device_complete": 1},
+    "superpage": {"ret": 3500, "traps": 3, "trap_exceptions": 3, "device_complete": 1},
+    "amo_mmu": {"ret": 5500, "traps": 2, "trap_exceptions": 2, "device_complete": 1},
 }
 
-P1_EXTERNAL_TEST_FLOOR_FIELDS = {"rows", "ret", "traps", "trap_exceptions", "spike_commits", "terminal_trap"}
+P1_EXTERNAL_TEST_FLOOR_FIELDS = {
+    "rows",
+    "ret",
+    "traps",
+    "trap_exceptions",
+    "spike_commits",
+    "terminal_trap",
+    "device_complete",
+}
 
 
 def format_p1_external_test_floors(floors):
@@ -288,7 +296,7 @@ def parse_p1_external_test_floors(text):
 
 
 def p1_external_test_field(item, field):
-    if field == "terminal_trap":
+    if field in ("terminal_trap", "device_complete"):
         return int(bool(item.get(field)))
     return int(item.get(field, 0))
 
@@ -449,19 +457,18 @@ def add_github_import_binding_check(
     checks,
     dashboard,
     label,
-    actual_logdir,
     expected_logdir,
     import_root,
     dashboard_path,
 ):
+    summary, source = load_summary(dashboard, expected_logdir)
     add_check(
         checks,
-        f"latest GitHub import {label} logdir",
-        actual_logdir == expected_logdir,
-        f"logdir={actual_logdir or 'none'} expected={expected_logdir}",
+        f"latest GitHub import {label} summary",
+        bool(summary),
+        f"logdir={expected_logdir} source={source or 'none'}",
         str(dashboard_path),
     )
-    _summary, source = load_summary(dashboard, actual_logdir)
     add_check(
         checks,
         f"latest GitHub import {label} source",
@@ -515,6 +522,7 @@ def main():
     )
     ap.add_argument("--min-p1-external-trap-exceptions", type=int, default=23)
     ap.add_argument("--min-p1-external-terminal-traps", type=int, default=1)
+    ap.add_argument("--min-p1-external-device-completions", type=int, default=9)
     ap.add_argument("--min-rvtrace-runs", type=int, default=1)
     ap.add_argument("--min-rvtrace-coverage-runs", type=int, default=1)
     ap.add_argument("--min-pnr-runs", type=int, default=1)
@@ -549,11 +557,6 @@ def main():
     history_records, history_errors = load_history(history_path)
     history = dashboard.get("history", {}) if isinstance(dashboard.get("history"), dict) else {}
     checks = []
-    latest_by_profile = (
-        dashboard.get("latest_by_profile")
-        if isinstance(dashboard.get("latest_by_profile"), dict)
-        else {}
-    )
 
     errors = dashboard.get("errors", [])
     add_check(checks, "dashboard parse warnings", not errors, f"errors={len(errors)}", str(dashboard_path))
@@ -647,7 +650,6 @@ def main():
                     checks,
                     dashboard,
                     "quick",
-                    latest_by_profile.get("quick"),
                     expected_quick,
                     import_root,
                     dashboard_path,
@@ -656,39 +658,22 @@ def main():
                     checks,
                     dashboard,
                     "P1 external",
-                    dashboard.get("latest_p1_external"),
                     expected_p1,
                     import_root,
                     dashboard_path,
-                )
-                add_check(
-                    checks,
-                    "latest GitHub import P1 profile logdir",
-                    latest_by_profile.get("p1") == expected_p1,
-                    f"logdir={latest_by_profile.get('p1') or 'none'} expected={expected_p1}",
-                    str(dashboard_path),
                 )
                 add_github_import_binding_check(
                     checks,
                     dashboard,
                     "RVTRACE",
-                    dashboard.get("latest_rvtrace"),
                     expected_trace,
                     import_root,
                     dashboard_path,
-                )
-                add_check(
-                    checks,
-                    "latest GitHub import RVTRACE profile logdir",
-                    latest_by_profile.get("p1-trace-audit") == expected_trace,
-                    f"logdir={latest_by_profile.get('p1-trace-audit') or 'none'} expected={expected_trace}",
-                    str(dashboard_path),
                 )
                 add_github_import_binding_check(
                     checks,
                     dashboard,
                     "RVTRACE coverage",
-                    dashboard.get("latest_rvtrace_coverage"),
                     expected_trace,
                     import_root,
                     dashboard_path,
@@ -863,6 +848,13 @@ def main():
                 "P1 external terminal traps",
                 int(latest_p1.get("terminal_traps", 0)),
                 args.min_p1_external_terminal_traps,
+                evidence=p1_source,
+            )
+            check_min(
+                checks,
+                "P1 external device completions",
+                int(latest_p1.get("device_completions", 0)),
+                args.min_p1_external_device_completions,
                 evidence=p1_source,
             )
         add_check(

@@ -174,6 +174,7 @@ def parse_log(path):
                     "last_pc": match.group("last_pc"),
                     "stopped_before": stopped_before.group(1) if stopped_before else None,
                     "terminal_trap": "terminal_trap=1" in rest,
+                    "device_complete": "device_complete=1" in rest,
                 }
             )
             continue
@@ -190,6 +191,7 @@ def parse_log(path):
                     "trap_exceptions": sum(item["trap_exceptions"] for item in spike_entries),
                     "spike_commits": sum(item["spike_commits"] for item in spike_entries),
                     "terminal_traps": sum(1 for item in spike_entries if item["terminal_trap"]),
+                    "device_completions": sum(1 for item in spike_entries if item["device_complete"]),
                     "tests": spike_entries,
                 }
             )
@@ -364,7 +366,8 @@ def main():
             lines.append(
                 "- status={status} tests={test_count} names={tests_text} ret={ret} traps={traps} "
                 "trap_exceptions={trap_exceptions} spike_commits={spike_commits} "
-                "terminal_traps={terminal_traps} source=`{source}`".format(
+                "terminal_traps={terminal_traps} device_completions={device_completions} "
+                "source=`{source}`".format(
                     tests_text=tests_text,
                     **item,
                 )

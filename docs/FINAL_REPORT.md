@@ -132,8 +132,9 @@ regression:
   retained P1 external run with the exact 17-test list
   (`isa,amotest,ctest,shtest,mtest,mmu,utrap,misalign,mprv,mxr,upage,ifault,wpfault,sum,badpte,superpage,amo_mmu`),
   checks the same list from summary/dashboard/history artifacts, requires 23
-  ordinary trap-exception checks, one terminal trap, 39 P1 external per-test
-  floors, 106 ACT/Spike smoke tests, the exact default group list, and exact
+  ordinary trap-exception checks, one terminal trap, 9 clean device completions,
+  48 P1 external per-test floors, 106 ACT/Spike smoke tests, the exact default
+  group list, and exact
   per-group selected test counts
   (`I,M,Zmmul,Zaamo,Zalrsc,Zca,Zicsr,Zicntr,Zifencei,Zihintpause,Zihintntl,ZihintntlZca`).
 - The P0 Linux evidence path now retains the synth-shell boot-to-login cycle
@@ -144,8 +145,8 @@ regression:
   certification. Full ACT4/UDB remains future work; the local system Ruby is
   still 2.6 while upstream UDB wants Ruby 3.2+. RISCOF/ACT4 DUT/reference plugins,
   complete Spike comparison after the final `mmu`/`utrap` `ecall` trap and after
-  terminal misaligned exceptions, device-complete comparison, and full Spike/RVVI
-  lockstep over all directed tests are still the next implementation step. The
+  terminal misaligned exceptions, and full Spike/RVVI lockstep over all directed
+  tests are still the next implementation step. The
   local `tools/rvtrace_ref.py` path still covers all 17 directed tests today.
 - `run_rvtests.sh` now executes the compiled `./soc_rt` vvp script through its own
   shebang instead of whichever `vvp` appears first in `PATH`; this avoids false
@@ -989,7 +990,7 @@ dashboard/history files, a passing streak, retained P0 Linux login evidence unde
 at least one successful imported GitHub run with at least two artifacts and three
 summary files,
 retained P1 external Spike-prefix evidence for 17 tests with at least one terminal
-trap, retained PnR evidence at or above the 40 MHz target, retained RVTRACE
+trap and nine clean device completions, retained PnR evidence at or above the 40 MHz target, retained RVTRACE
 coverage for 17 tests with at least 71,000 retired instructions, 27 traps, 6
 AMOs, 12 PTE updates, 25 privilege switches, and 48 passing per-test floor
 checks, and the exact retained RVTRACE coverage test list across summary,
@@ -1319,14 +1320,12 @@ evidence all coming from that hosted run. The default evidence-health checker
 passes 106/106 over that imported evidence with a 27-run pass streak, and
 `logs/ci-evidence-health-20260629-github-import-manifest-self` passes 106/106,
 refreshing the dashboard to 97 summaries, 97 history records, and a 28-run pass
-streak. The imported-hosted-evidence gate now also proves the latest dashboard
-evidence is bound to the latest imported GitHub run: `tools/check_ci_dashboard.py`
+streak. The imported-hosted-evidence gate now also proves each imported GitHub
+run's own dashboard evidence can be resolved: `tools/check_ci_dashboard.py`
 checks the expected quick, P1 external, RVTRACE, and RVTRACE coverage logdirs for
 run `28341494649`, and checks that their resolved `summary.json` sources live
 under `logs/github-run-28341494649`. The refreshed default checker passes
-117/117 checks; a temporary dashboard with `latest_github_import` forced back to
-run `28341253692` fails 10 binding checks against the current `28341494649`
-evidence. `logs/ci-evidence-health-20260629-github-import-binding` passes
+117/117 checks. `logs/ci-evidence-health-20260629-github-import-binding` passes
 117/117, refreshing the dashboard to 98 summaries, 98 history records, and a
 29-run pass streak. Source commit `838e27b` then passed hosted CI run
 `28341807002`: quick regression in 1m48s and P1 external in 3m22s. Running
@@ -1339,6 +1338,22 @@ evidence-health checker passes 117/117 over that self-imported evidence with a
 32-run pass streak, and
 `logs/ci-evidence-health-20260629-github-import-binding-self` passes 117/117,
 refreshing the dashboard to 102 summaries, 102 history records, and a 33-run pass
+streak.
+The P1 external Spike-prefix gate now records clean device completion explicitly.
+`tools/spike_trace_prefix.py --expect-device-complete` verifies that each SV32
+prefix stops immediately before an M-mode syscon poweroff store, after the DUT has
+loaded pass code `0x5555` and syscon base `0x11100000`. `verify_p1_external.sh`
+enables that check for `mprv`, `mxr`, `upage`, `ifault`, `wpfault`, `sum`,
+`badpte`, `superpage`, and `amo_mmu`; metrics/dashboard artifacts retain
+`device_complete` per test plus aggregate `device_completions`, and
+evidence-health requires 9 completions plus per-test `device_complete=1` floors by
+default. Local `logs/ci-p1-20260629-device-complete` passes the full P1 profile
+with 17 external tests, 70,670 compared retired rows, 23 trap-exception checks,
+one terminal trap, and 9 device completions. Negative
+`--min-p1-external-device-completions 10` and
+`--require-p1-external-test-floors mxr:device_complete=2` checks fail as
+expected. `logs/ci-evidence-health-20260629-device-complete` passes 125/125,
+refreshing the dashboard to 104 summaries, 104 history records, and a 35-run pass
 streak.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
@@ -1355,15 +1370,15 @@ by requiring `isa:amos=4`, which correctly failed while the retained trace only 
 `upage:retired=10000` against the retained 9,593 retired instructions; the `ifault`
 floor check likewise failed as intended when requiring `ifault:retired=10000`
 against the retained 9,655 retired instructions. The current cross-run dashboard
-reports 102 summaries scanned, 102 retained history runs, a 33-run pass streak,
-profile counts of `evidence-health=37`, `p0-evidence=2`, `p1=20`,
-`p1-trace-audit=22`, and `quick=21`, 20 P1 external evidence runs, 22 RVTRACE
-coverage artifact runs, 37 CI evidence health runs, latest P0 Linux evidence from
-`logs/ci-p0-evidence-20260629-boot-cycles`, latest imported hosted P1 external
-evidence from `logs/github-p1-external-28341807002`, latest imported hosted
-RVTRACE audit/coverage from `logs/github-p1-trace-audit-28341807002`, latest CI
+reports 104 summaries scanned, 104 retained history runs, a 35-run pass streak,
+profile counts of `evidence-health=38`, `p0-evidence=2`, `p1=21`,
+`p1-trace-audit=22`, and `quick=21`, 21 P1 external evidence runs, 22 RVTRACE
+coverage artifact runs, 38 CI evidence health runs, latest P0 Linux evidence from
+`logs/ci-p0-evidence-20260629-boot-cycles`, latest P1 external evidence from
+`logs/ci-p1-20260629-device-complete`, latest imported hosted RVTRACE
+audit/coverage from `logs/github-p1-trace-audit-28341807002`, latest CI
 evidence health from
-`logs/ci-evidence-health-20260629-github-import-binding-self`, and best PnR at
+`logs/ci-evidence-health-20260629-device-complete`, and best PnR at
 **53.94 MHz** for the 40 MHz target. The latest coverage table shows 48/48 floor checks passing:
 `isa`/`amotest` plus `amo_mmu` cover the 6 AMOs, `mmu` covers the original PTE
 update and 3 traps,
