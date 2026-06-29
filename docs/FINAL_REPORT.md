@@ -980,11 +980,14 @@ RVTRACE coverage test list, and PnR Fmax range across runs.
 repeatable: it downloads a selected GitHub Actions run into
 `logs/github-run-<run-id>/`, records a manifest, counts imported summaries, and
 refreshes the dashboard/history so hosted artifacts become first-class retained
-evidence.
+evidence. The dashboard now also publishes `github_import_runs`, `github_imports`,
+and `latest_github_import` from those manifests.
 `tools/check_ci_dashboard.py` turns those retained
 artifacts into a cheap evidence-health gate: by default it requires parse-clean
 dashboard/history files, a passing streak, retained P0 Linux login evidence under
 9,000,000,000 cycles,
+at least one successful imported GitHub run with at least two artifacts and three
+summary files,
 retained P1 external Spike-prefix evidence for 17 tests with at least one terminal
 trap, retained PnR evidence at or above the 40 MHz target, retained RVTRACE
 coverage for 17 tests with at least 71,000 retired instructions, 27 traps, 6
@@ -1299,6 +1302,14 @@ evidence all coming from that hosted run. The default evidence-health checker
 passes 101/101 over that imported evidence, and
 `logs/ci-evidence-health-20260629-github-import-self` passes 101/101, refreshing
 the dashboard to 92 summaries, 92 history records, and a 23-run pass streak.
+The imported hosted-run manifest is now a hard health gate. The refreshed
+dashboard exposes 2 imported GitHub runs, with latest import `28341253692`
+showing `conclusion=success`, 2 artifacts, and 3 summaries. The default checker
+passes 106/106 checks; a negative `--min-github-import-summaries 4` fails against
+the latest manifest's `summary_json_count=3`. The formal
+`logs/ci-evidence-health-20260629-github-import-manifest` profile passes 106/106
+and refreshes the dashboard to 93 summaries, 93 history records, and a 24-run
+pass streak.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on

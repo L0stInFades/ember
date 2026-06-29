@@ -172,13 +172,15 @@ the retained traps, AMOs, PTE updates, and privilege switches come from, and it 
 enforces default per-test coverage floors so those signals cannot silently move out
 of the intended directed tests. `tools/check_ci_dashboard.py` now turns retained
 dashboard/history artifacts into a cheap `evidence-health` gate over parse-clean
-artifacts, P0 Linux login evidence with a default 9B-cycle ceiling, exact P1
-external test composition across summary/dashboard/history artifacts, 39 P1
-external per-test floors, exact ACT/Spike group counts, exact RVTRACE coverage
-test composition across summary/dashboard/history artifacts, 40 MHz PnR evidence,
-RVTRACE aggregate counts, and 48 RVTRACE per-test coverage-floor checks. The
-current dashboard in this worktree scans 92 summaries, retains 92 history
-records, has a 23-run pass streak, and tracks the latest P0 Linux evidence with
+artifacts, at least one successful imported GitHub run manifest with the expected
+hosted artifact/summary counts, P0 Linux login evidence with a default 9B-cycle
+ceiling, exact P1 external test composition across summary/dashboard/history
+artifacts, 39 P1 external per-test floors, exact ACT/Spike group counts, exact
+RVTRACE coverage test composition across summary/dashboard/history artifacts, 40
+MHz PnR evidence, RVTRACE aggregate counts, and 48 RVTRACE per-test
+coverage-floor checks. The current dashboard in this worktree scans 93
+summaries, retains 93 history records, has a 24-run pass streak, and tracks the
+latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, the latest imported hosted RVTRACE
 audit/coverage and P1 external evidence from run `28341253692`, latest CI
 evidence health, best PnR Fmax, profile counts, floor-check status, latest run
@@ -623,6 +625,17 @@ coming from run `28341253692`. The default evidence-health checker then passes
 `logs/ci-evidence-health-20260629-github-import-self` profile passes 101/101 and
 refreshes the dashboard to 92 summaries, 92 history records, and a 23-run pass
 streak.
+The imported-hosted-evidence gate is now part of `evidence-health`, not just a
+documented workflow. `tools/render_ci_dashboard.py` publishes `github_import_runs`,
+`github_imports`, and `latest_github_import` from retained
+`github_run_import.json` manifests, and `tools/check_ci_dashboard.py` now requires
+at least one successful import with at least 2 artifacts and 3 summaries by
+default. The refreshed default checker passes 106/106 checks; a negative
+`--min-github-import-summaries 4` fails on the latest manifest's
+`summary_json_count=3`. The formal
+`logs/ci-evidence-health-20260629-github-import-manifest` profile passes 106/106
+and refreshes the dashboard to 93 summaries, 93 history records, and a 24-run
+pass streak.
 
 ---
 

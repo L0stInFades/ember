@@ -25,6 +25,27 @@ def load_summary(path):
     return data, None
 
 
+def load_github_import(path):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return None, f"{path}: {exc}"
+    if not isinstance(data, dict) or "run_id" not in data:
+        return None, f"{path}: not a GitHub run import manifest"
+    record = {
+        "schema_version": data.get("schema_version"),
+        "repo": data.get("repo"),
+        "run_id": data.get("run_id"),
+        "imported_at": data.get("imported_at"),
+        "artifacts": data.get("artifacts", []),
+        "summary_json_count": data.get("summary_json_count", 0),
+        "run": data.get("run", {}),
+        "manifest_path": str(path),
+        "_mtime": path.stat().st_mtime,
+    }
+    return record, None
+
+
 def load_history(path):
     records = []
     errors = []
@@ -473,6 +494,26 @@ def trend_lines(trend, history_path):
     return lines
 
 
+def github_import_lines(imports):
+    lines = ["## GitHub Imports", ""]
+    if not imports:
+        lines.append("- imported runs: `0`")
+        return lines
+    latest = imports[0]
+    run = latest.get("run", {}) if isinstance(latest.get("run"), dict) else {}
+    artifacts = latest.get("artifacts", [])
+    lines += [
+        f"- imported runs: `{len(imports)}`",
+        (
+            "- latest import: "
+            f"`{latest.get('run_id')}` repo=`{latest.get('repo')}` "
+            f"conclusion=`{run.get('conclusion', 'unknown')}` "
+            f"artifacts=`{len(artifacts)}` summaries=`{latest.get('summary_json_count', 0)}`"
+        ),
+    ]
+    return lines
+
+
 def rel(path, root):
     try:
         return str(Path(path).relative_to(root))
@@ -575,6 +616,7 @@ def main():
 
     root = Path(args.root)
     summaries = []
+    github_imports = []
     errors = []
     if root.is_dir():
         for path in root.rglob("summary.json"):
@@ -583,7 +625,14 @@ def main():
                 errors.append(error)
             elif data:
                 summaries.append(data)
+        for path in root.rglob("github_run_import.json"):
+            data, error = load_github_import(path)
+            if error:
+                errors.append(error)
+            elif data:
+                github_imports.append(data)
     summaries.sort(key=lambda item: item["_mtime"], reverse=True)
+    github_imports.sort(key=lambda item: item["_mtime"], reverse=True)
 
     latest_profiles = latest_profile_map(summaries)
     latest_p0 = latest_with_p0_mode(summaries, "login") or latest_with(summaries, "p0_linux_passes")
@@ -603,6 +652,16 @@ def main():
         "root": str(root),
         "runs": len(summaries),
         "errors": errors,
+        "github_import_runs": len(github_imports),
+        "github_imports": [
+            {key: value for key, value in item.items() if key != "_mtime"}
+            for item in github_imports
+        ],
+        "latest_github_import": (
+            {key: value for key, value in github_imports[0].items() if key != "_mtime"}
+            if github_imports
+            else None
+        ),
         "latest_by_profile": {profile: summary.get("logdir") for profile, summary in sorted(latest_profiles.items())},
         "latest_p0_linux": latest_p0.get("logdir") if latest_p0 else None,
         "latest_p1_external": latest_p1_external.get("logdir") if latest_p1_external else None,
@@ -657,6 +716,7 @@ def main():
         "",
         f"- summaries scanned: `{len(summaries)}`",
         f"- retained history runs: `{trend['runs']}`",
+        f"- GitHub imported runs: `{len(github_imports)}`",
         f"- latest P0 Linux evidence: `{dashboard['latest_p0_linux'] or 'none'}`",
         f"- latest P1 external evidence: `{dashboard['latest_p1_external'] or 'none'}`",
         f"- latest P1 external tests: `{','.join(dashboard['latest_p1_external_tests']) or 'none'}`",
@@ -676,6 +736,7 @@ def main():
     else:
         lines.append("- best PnR Fmax: `none`")
     lines += [""] + trend_lines(trend, history_path)
+    lines += [""] + github_import_lines(github_imports)
     if latest_coverage:
         lines += [""] + rvtrace_coverage_lines(latest_coverage)
     if latest_profiles:

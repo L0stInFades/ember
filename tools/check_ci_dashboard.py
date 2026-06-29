@@ -411,6 +411,11 @@ def check_max(checks, name, value, maximum, unit="", evidence=None):
     )
 
 
+def latest_github_import(dashboard):
+    item = dashboard.get("latest_github_import")
+    return item if isinstance(item, dict) else {}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dashboard", default="logs/ci-dashboard.json", help="dashboard JSON to check")
@@ -423,6 +428,9 @@ def main():
     ap.add_argument("--min-p0-linux-runs", type=int, default=1)
     ap.add_argument("--max-p0-linux-login-cycles", type=int, default=9_000_000_000)
     ap.add_argument("--min-p1-external-runs", type=int, default=1)
+    ap.add_argument("--min-github-import-runs", type=int, default=1)
+    ap.add_argument("--min-github-import-artifacts", type=int, default=2)
+    ap.add_argument("--min-github-import-summaries", type=int, default=3)
     ap.add_argument("--min-p1-external-tests", type=int, default=17)
     ap.add_argument(
         "--require-p1-external-tests",
@@ -470,6 +478,7 @@ def main():
         help="comma-separated exact RVTRACE coverage test list required for latest coverage evidence; empty disables",
     )
     ap.add_argument("--no-require-p0-linux", action="store_true")
+    ap.add_argument("--no-require-github-import", action="store_true")
     ap.add_argument("--no-require-p1-external", action="store_true")
     ap.add_argument("--no-require-rvtrace", action="store_true")
     ap.add_argument("--no-require-rvtrace-coverage", action="store_true")
@@ -518,6 +527,49 @@ def main():
         args.min_pass_streak,
         evidence=str(history_path),
     )
+
+    if not args.no_require_github_import:
+        imports = dashboard.get("github_imports") if isinstance(dashboard.get("github_imports"), list) else []
+        import_runs = int(dashboard.get("github_import_runs", len(imports)))
+        check_min(
+            checks,
+            "GitHub imported runs",
+            import_runs,
+            args.min_github_import_runs,
+            evidence=str(dashboard_path),
+        )
+        latest_import = latest_github_import(dashboard)
+        import_source = latest_import.get("manifest_path")
+        add_check(
+            checks,
+            "latest GitHub import exists",
+            bool(latest_import),
+            f"run_id={latest_import.get('run_id', 'none')}",
+            import_source,
+        )
+        if latest_import:
+            run = latest_import.get("run") if isinstance(latest_import.get("run"), dict) else {}
+            add_check(
+                checks,
+                "latest GitHub import succeeded",
+                run.get("conclusion") == "success",
+                f"conclusion={run.get('conclusion', 'unknown')} status={run.get('status', 'unknown')}",
+                import_source,
+            )
+            check_min(
+                checks,
+                "latest GitHub import artifacts",
+                len(latest_import.get("artifacts", [])),
+                args.min_github_import_artifacts,
+                evidence=import_source,
+            )
+            check_min(
+                checks,
+                "latest GitHub import summaries",
+                int(latest_import.get("summary_json_count", 0)),
+                args.min_github_import_summaries,
+                evidence=import_source,
+            )
 
     if not args.no_require_p0_linux:
         check_min(
@@ -1017,6 +1069,7 @@ def main():
             "latest_act4_spike": dashboard.get("latest_act4_spike"),
             "latest_rvtrace": dashboard.get("latest_rvtrace"),
             "latest_rvtrace_coverage": dashboard.get("latest_rvtrace_coverage"),
+            "latest_github_import": dashboard.get("latest_github_import"),
             "best_pnr": dashboard.get("best_pnr"),
         },
     }
