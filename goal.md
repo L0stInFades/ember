@@ -180,13 +180,13 @@ artifacts, 48 P1 external per-test floors including SV32 clean device-completion
 checks, exact ACT/Spike group counts, exact
 RVTRACE coverage test composition across summary/dashboard/history artifacts, 40
 MHz PnR evidence, RVTRACE aggregate counts, and 48 RVTRACE per-test
-coverage-floor checks. The current dashboard in this worktree scans 104
-summaries, retains 104 history records, has a 35-run pass streak, and tracks the
+coverage-floor checks. The current dashboard in this worktree scans 108
+summaries, retains 108 history records, has a 39-run pass streak, and tracks the
 latest P0 Linux evidence with
-its 8,716,611,501-cycle login point, the latest P1 external evidence from
-`logs/ci-p1-20260629-device-complete`, the latest imported hosted RVTRACE
-audit/coverage from run `28341807002`, latest CI
-evidence health, best PnR Fmax, profile counts, floor-check status, latest run
+its 8,716,611,501-cycle login point, the latest imported hosted P1 external and
+RVTRACE audit/coverage evidence from run `28360409336`, latest CI evidence health
+from `logs/ci-evidence-health-20260629-device-complete-github-import`, best PnR
+Fmax, profile counts, floor-check status, latest run
 per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
 and trend history after every profile,
 and the GitHub workflows publish the per-run summary plus cross-run dashboard/trend
@@ -688,7 +688,19 @@ and 9 device completions. Negative checks
 `--require-p1-external-test-floors mxr:device_complete=2` fail as expected. The
 formal `logs/ci-evidence-health-20260629-device-complete` profile passes 125/125
 and refreshes the dashboard to 104 summaries, 104 history records, and a 35-run
-pass streak.
+pass streak. Commit `05729a9` then passed hosted CI run `28360409336`: quick
+regression completed in 1m51s and P1 external completed in 3m19s with the same 17
+external tests, 70,670 compared retired rows, 23 trap-exception checks, one
+terminal trap, and 9 device completions. Running
+`python3 tools/import_github_run_artifacts.py 28360409336` imports 2 artifacts and
+3 summaries into `logs/github-run-28360409336`, records head SHA
+`05729a92fd79ffa44a95f8f2f44a8fadcdc11ec1`, and refreshes the dashboard to
+107/107 with latest quick, P1 external, RVTRACE, and RVTRACE coverage evidence all
+coming from run `28360409336`. The default evidence-health checker passes 125/125
+over that imported evidence with a 38-run pass streak, and the formal
+`logs/ci-evidence-health-20260629-device-complete-github-import` profile passes
+125/125 and refreshes the dashboard to 108 summaries, 108 history records, and a
+39-run pass streak.
 
 ---
 
