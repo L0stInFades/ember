@@ -177,10 +177,10 @@ external test composition across summary/dashboard/history artifacts, 39 P1
 external per-test floors, exact ACT/Spike group counts, exact RVTRACE coverage
 test composition across summary/dashboard/history artifacts, 40 MHz PnR evidence,
 RVTRACE aggregate counts, and 48 RVTRACE per-test coverage-floor checks. The
-current dashboard in this worktree scans 88 summaries, retains 88 history
-records, has a 19-run pass streak, and tracks the latest P0 Linux evidence with
+current dashboard in this worktree scans 92 summaries, retains 92 history
+records, has a 23-run pass streak, and tracks the latest P0 Linux evidence with
 its 8,716,611,501-cycle login point, the latest imported hosted RVTRACE
-audit/coverage and P1 external evidence from run `28340935386`, latest CI
+audit/coverage and P1 external evidence from run `28341253692`, latest CI
 evidence health, best PnR Fmax, profile counts, floor-check status, latest run
 per profile, and recent runs. `verify_ci.sh` refreshes this dashboard
 and trend history after every profile,
@@ -611,6 +611,18 @@ retained evidence reports 101/101 checks. The formal
 `logs/ci-evidence-health-20260629-github-import` run then passes 101/101 checks
 and refreshes the dashboard to 88 summaries, 88 history records, and a 19-run
 pass streak.
+The source commit `b6bd08e` that added that importer passed hosted CI as run
+`28341253692`: quick regression completed in 1m24s and P1 external completed in
+2m50s. Running the committed importer on its own hosted run,
+`python3 tools/import_github_run_artifacts.py 28341253692`, downloads 2 artifacts
+and 3 summaries into `logs/github-run-28341253692`, records manifest metadata
+for head SHA `b6bd08ed69b67a0eac49acdacc3a3ded6f2f1434`, and refreshes the
+dashboard to 91/91 with latest quick, P1 external, and RVTRACE evidence all
+coming from run `28341253692`. The default evidence-health checker then passes
+101/101 over that imported evidence, and the formal
+`logs/ci-evidence-health-20260629-github-import-self` profile passes 101/101 and
+refreshes the dashboard to 92 summaries, 92 history records, and a 23-run pass
+streak.
 
 ---
 

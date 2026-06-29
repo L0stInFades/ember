@@ -1288,6 +1288,17 @@ reports 101/101 checks. The formal
 `logs/ci-evidence-health-20260629-github-import` profile then passes 101/101 and
 refreshes the dashboard to 88 summaries, 88 history records, and a 19-run pass
 streak.
+The importer itself is now covered by hosted CI and a self-import check. Source
+commit `b6bd08e` passed hosted CI run `28341253692`: quick regression in 1m24s
+and P1 external in 2m50s. Running
+`python3 tools/import_github_run_artifacts.py 28341253692` imports 2 artifacts and
+3 summaries into `logs/github-run-28341253692`, records head SHA
+`b6bd08ed69b67a0eac49acdacc3a3ded6f2f1434`, and refreshes the dashboard to 91
+summaries / 91 history records with latest quick, P1 external, and RVTRACE
+evidence all coming from that hosted run. The default evidence-health checker
+passes 101/101 over that imported evidence, and
+`logs/ci-evidence-health-20260629-github-import-self` passes 101/101, refreshing
+the dashboard to 92 summaries, 92 history records, and a 23-run pass streak.
 Both GitHub workflows append the per-run `summary.md` and
 the cross-run dashboard Markdown to the Actions step summary before uploading logs,
 including the dashboard, history, and trend artifacts. This was verified on
